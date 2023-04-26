@@ -11,8 +11,9 @@ while p<=n:
         prim.append(p)
         p=p+1
         p_notreal=p_real*2
+        notprim.append(p_notreal)
         while p_notreal<n:
             k=k+1
             p_notreal=p_real*k
             notprim.append(p_notreal)
-print(prim)    
+print(prim)
