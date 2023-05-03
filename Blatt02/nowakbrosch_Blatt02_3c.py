@@ -4,5 +4,5 @@ for k in range(len(d1)):
     for i in range(k + 1, len(d1)):
         if d1[i] < d1[min]:
             min = i
-    (d1[k], d1[min]) = (d1[min], d1[k])
+    d1[k], d1[min]= d1[min], d1[k]
 print(d1)
