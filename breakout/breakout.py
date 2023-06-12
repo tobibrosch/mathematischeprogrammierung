@@ -30,9 +30,11 @@ lives = 3
 #Bodenplatte verändern des winkels mit random 
 dt_x=1
 dt_y=1
-#Farbenwechsel
+#Farbenwechsel zeiten
 current_time=0
 red_color_time=0
+#Failing Bildschirm
+failing_display_time=0
 # Starte den Spielloop mit running
 running = True
 while running:
@@ -45,9 +47,9 @@ while running:
     
     #Movement der Baseplatte mit Limit der ränder 
     if pressed_keys[pygame.K_a] and rect_x_position >=0:
-        rect_x_position -= 0.2 * dt
+        rect_x_position -= 0.5 * dt
     if pressed_keys[pygame.K_d] and rect_x_position <=screen_width-rect_size[0]:
-        rect_x_position += 0.2 * dt
+        rect_x_position += 0.5 * dt
 
 
     screen.fill(background_color)
@@ -76,7 +78,7 @@ while running:
             ball_x_position+=3*dt_x
         if left:
             ball_x_position-=3*dt_x
-        
+            
     #Kollision am Boden
     if ball_y_position >= 600:
         #reset wieder 
@@ -91,8 +93,8 @@ while running:
         #Leben runter zählen 
         lives-=1
         if lives ==0:
-            running = False
-    
+            running=False
+
     #Kollision an der Decke 
     if ball_y_position <= 0:
         ball_y_position+=1
@@ -100,18 +102,18 @@ while running:
         down = True
 
     #Kollision an der Bodenplatte
-    if ball_x_position <= rect_x_position+100 and ball_x_position >=rect_x_position and ball_y_position>=575 and ball_y_position<577:
+    if ball_x_position <= rect_x_position+100 and ball_x_position >=rect_x_position and ball_y_position>=575 and ball_y_position<580:
         up=True
         down=False
         #farbenwechsel
         rect_color="green"
         red_color_time = pygame.time.get_ticks()
         if pressed_keys[pygame.K_a] or pressed_keys[pygame.K_d]:
-            dt_x=random.randint(6,10)/10
-            dt_y=round(sqrt(1-dt_x**2),4)
+            dt_y=random.randint(6,9)/10
+            dt_x=round(sqrt(1-dt_y**2),4)
             print("Random wurde akiviert")
         if not right:
-            left=True
+            left=True   
         if not left:
             right=True
 
@@ -132,6 +134,17 @@ while running:
         left=True
         right=False
 
+    #Leben anhand von Rechecken 
+    if lives==3:
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(25,10),pygame.Vector2(10,10)),0)
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(40,10),pygame.Vector2(10,10)),0)
+    if lives==2:
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(25,10),pygame.Vector2(10,10)),0)
+    if lives==1:
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
+    
 
     # fps sind 120 
     clock.tick(120)
