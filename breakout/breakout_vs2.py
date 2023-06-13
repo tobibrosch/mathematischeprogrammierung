@@ -15,10 +15,11 @@ def moving_rect(dt):
         x_speed *= -1
     if rect_2.top < 0 or rect_2.bottom > 800:
         y_speed_rect2 *= -1
-    hitbox = 12
+    hitbox = 10
     for rect in rectangle_list:
         if rect_1.colliderect(rect):
-            rectangle_list.remove(rect)  # Entferne das Rechteck aus der Liste
+            if rect!=rect_2:
+                rectangle_list.remove(rect)  # Entferne das Rechteck aus der Liste
             if abs(rect_1.bottom - rect.top) < hitbox and y_speed > 0:
                 y_speed *= -1
             if abs(rect_1.top - rect.bottom) < hitbox and y_speed < 0:
@@ -27,16 +28,6 @@ def moving_rect(dt):
                 x_speed *= -1
             if abs(rect_1.right - rect.left) < hitbox and x_speed > 0:
                 x_speed *= -1
-    if rect_1.colliderect(rect_2):
-            if abs(rect_1.bottom - rect_2.top) < hitbox and y_speed > 0:
-                y_speed *= -1
-            if abs(rect_1.top - rect_2.bottom) < hitbox and y_speed < 0:
-                y_speed *= -1
-            if abs(rect_1.left - rect_2.right) < hitbox and x_speed < 0:
-                x_speed *= -1
-            if abs(rect_1.right - rect_2.left) < hitbox and x_speed > 0:
-                x_speed *= -1
-
 pygame.init()
 
 screen = pygame.display.set_mode((800, 800))
@@ -47,7 +38,8 @@ rect_2 = pygame.Rect(200, 700, 100, 10)
 
 
 #rectangle_list = [rect_3, rect_4]
-rectangle_list = [pygame.Rect(i*95,j*25,90,20) for i in range(8) for j in range(8)]
+rectangle_list = [pygame.Rect(i*100+5,j*25,90,20) for i in range(8) for j in range(8)]
+rectangle_list.append(rect_2)
 #Geschwindigkeiten
 x_speed = 300
 y_speed = 400
@@ -75,10 +67,7 @@ while running:
     moving_rect(dt)
 
 
-
-
     pygame.display.flip()
     clock.tick(120)
 
-# Quit Pygame
 pygame.quit()
