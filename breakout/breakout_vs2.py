@@ -14,7 +14,7 @@ def moving_rect(dt):
         x_speed=0
         rect_1.x, rect_1.y = 400, 400
         lives-=1
-    if rect_1.left < 0 or rect_1.right > 800:
+    elif rect_1.left < 0 or rect_1.right > 800:
         x_speed *= -1
     hitbox = 5
     for rect in rectangle_list:
@@ -30,11 +30,11 @@ def moving_rect(dt):
                 dx = round(sqrt(1-dy**2),4)
             if abs(rect_1.bottom - rect.top) < hitbox and y_speed > 0:
                 y_speed *= -1
-            if abs(rect_1.top - rect.bottom) < hitbox and y_speed < 0:
+            elif abs(rect_1.top - rect.bottom) < hitbox and y_speed < 0:
                 y_speed *= -1
-            if abs(rect_1.left - rect.right) < hitbox and x_speed < 0:
+            elif abs(rect_1.left - rect.right) < hitbox and x_speed < 0:
                 x_speed *= -1
-            if abs(rect_1.right - rect.left) < hitbox and x_speed > 0:
+            elif abs(rect_1.right - rect.left) < hitbox and x_speed > 0:
                 x_speed *= -1
 pygame.init()
 
@@ -99,7 +99,9 @@ lives=3
 #scoreboard = [['Name','Punkte']]
 with open('scoreboard.csv', mode='a', newline='') as file:
    writer = csv.writer(file)  # CSV-Writer erstellen
-    # Daten in die Datei schreiben
+
+
+
 
 
 name=""
@@ -170,8 +172,8 @@ while running:
                 screen.blit(player_1,(800,160+j*30))
         j=0
 
-        pause_text = font_2.render("press spacebar to pause game", True, (255, 255, 255))
-        screen.blit(pause_text,(300,750))
+        pause_text = font_2.render("press spacebar to pause game or q for quit", True, (255, 255, 255))
+        screen.blit(pause_text,(250,750))
         pygame.display.flip()
         clock.tick(120)
 
@@ -203,7 +205,7 @@ while running:
             space_bar=False
         screen.fill("Black")
         text_line1 = font_2.render("Points: " + str(points), True, (255, 255, 255))
-        text_line2 = font_2.render("Press c to continue", True, (255, 255, 255))
+        text_line2 = font_2.render("press c to continue or q for quit", True, (255, 255, 255))
         screen.blit(text_line1, (400, 400))
         screen.blit(text_line2, (400, 430))
         clock.tick(120)

@@ -47,9 +47,9 @@ while running:
     
     #Movement der Baseplatte mit Limit der ränder 
     if pressed_keys[pygame.K_a] and rect_x_position >=0:
-        rect_x_position -= 0.5 * dt
+        rect_x_position -= 30 * dt
     if pressed_keys[pygame.K_d] and rect_x_position <=screen_width-rect_size[0]:
-        rect_x_position += 0.5 * dt
+        rect_x_position += 30 * dt
 
 
     screen.fill(background_color)
@@ -68,7 +68,7 @@ while running:
     #radius = 5
     pygame.draw.circle(screen,"red",pygame.Vector2(ball_x_position,ball_y_position),5)
     # movment des Balls 
-
+    #
     if ball_y_position>0 and ball_y_position <600:
         if down:
             ball_y_position+=3*dt_y
@@ -108,6 +108,7 @@ while running:
         #farbenwechsel
         rect_color="green"
         red_color_time = pygame.time.get_ticks()
+        #wenn Bodenplatte bewegt bei Kollision der abwurfinkel wird zufällig 
         if pressed_keys[pygame.K_a] or pressed_keys[pygame.K_d]:
             dt_y=random.randint(6,9)/10
             dt_x=round(sqrt(1-dt_y**2),4)
@@ -134,22 +135,27 @@ while running:
         left=True
         right=False
 
-    #Leben anhand von Rechecken 
-    if lives==3:
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(25,10),pygame.Vector2(10,10)),0)
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(40,10),pygame.Vector2(10,10)),0)
-    if lives==2:
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(25,10),pygame.Vector2(10,10)),0)
-    if lives==1:
-        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(10,10),pygame.Vector2(10,10)),0)
+
+    #Rechteckblock  an dauch Brick an der Decke
+    brick_x_position = 100
+    brick_y_position = 50
+    brick_width = 100
+    brick_hight = 10
+    pygame.draw.rect(screen,"purple",pygame.Rect(pygame.Vector2(brick_x_position,brick_y_position),pygame.Vector2(brick_width,brick_hight)),0)
+    #Boden des Bricks definieren
+
+
     
+    #Leben anhand von Rechecken 
+    for i in range(1,lives+1):
+        pygame.draw.rect(screen,"red",pygame.Rect(pygame.Vector2(i*10+5,10),pygame.Vector2(9,9)),0)
+
+
 
     # fps sind 120 
     clock.tick(120)
     # Zeit für fps 
-    dt = clock.tick(120)
+    dt = clock.tick(120)/100    
     pygame.display.flip()
 
 # Quit Pygame
