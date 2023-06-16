@@ -16,7 +16,11 @@ def moving_rect(dt):
         lives-=1
     elif rect_1.left < 0 or rect_1.right > 800:
         x_speed *= -1
-    hitbox = 5
+        if rect_1.left<0:
+             rect_1.left=0
+        if rect_1.right >800:
+             rect_1.right=800
+    hitbox = 4
     for rect in rectangle_list:
         if rect_1.colliderect(rect):
             if rect!=rect_2:
@@ -24,17 +28,21 @@ def moving_rect(dt):
                 points+=20
             if rect==rect_2:
                 if x_speed==0:
-
                     x_speed=400*random.choice([-1,1])
                 dy = random.randint(5,9)/10
                 dx = round(sqrt(1-dy**2),4)
+                rect_1.bottom=700
             if abs(rect_1.bottom - rect.top) < hitbox and y_speed > 0:
+                rect_1.bottom=rect.top
                 y_speed *= -1
             elif abs(rect_1.top - rect.bottom) < hitbox and y_speed < 0:
+                rect_1.top=rect.bottom
                 y_speed *= -1
             elif abs(rect_1.left - rect.right) < hitbox and x_speed < 0:
+                rect_1.left=rect.right
                 x_speed *= -1
             elif abs(rect_1.right - rect.left) < hitbox and x_speed > 0:
+                rect_1.right=rect.left
                 x_speed *= -1
 pygame.init()
 
@@ -73,10 +81,26 @@ font_2 = pygame.font.Font(None, 36)
 text_2 = font_2.render("Lives", True, (255, 255, 255))
 text_2_width = text_2.get_width()
 text_2_height = text_2.get_height()
-text_2_x = (screen_width - text_2_width) // 2  # x-Position für die horizontale Ausrichtung
+text_2_x = (screen_width - text_2_width) // 2  # x-Position für die horizontale Ausrichtun
 text_2_y = (screen_height - text_2_height) // 2 
 
-
+def text(font='Arial',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
+   text_font = pygame.font.SysFont(font,font_size)
+   text_shown = text_font.render(text, True, color)
+   text_font_width = text_shown.get_width()
+   text_font_height = text_shown.get_height()
+   if centering:
+        if not scale:
+            screen.blit(text_shown,(x_position-text_font_width/2,y_position-text_font_height/2))
+        else:
+            text_shown = pygame.transform.scale(text_shown, (scale_x, scale_y))
+            screen.blit(text_shown,(x_position-text_font_width/2,y_position-text_font_height/2))
+   elif not centering:
+        if not scale:
+            screen.blit(text_shown,(x_position,y_position))
+        else:
+            text_shown = pygame.transform.scale(text_shown, (scale_x, scale_y))
+            screen.blit(text_shown,(x_position,y_position))
 
 
 points=0
@@ -98,12 +122,12 @@ lives=3
 #scoreboard 
 #scoreboard = [['Name','Punkte']]
 with open('scoreboard.csv', mode='a', newline='') as file:
-   writer = csv.writer(file)  # CSV-Writer erstellen
+   writer = csv.writer(file) 
 
 
 
 
-
+one_run = 1 
 name=""
 input = False
 
@@ -115,7 +139,7 @@ while running:
     # Beende durch X drücken oder q
     pressed_keys = pygame.key.get_pressed()
     for event in pygame.event.get():
-        if event.type == pygame.QUIT or pressed_keys[pygame.K_q]:
+        if event.type == pygame.QUIT or pressed_keys[pygame.K_ESCAPE]:
             running = False
         if menu:
             if event.type == pygame.KEYDOWN:
@@ -125,16 +149,16 @@ while running:
                     name = name[:-1]
                 else:
                     name += event.unicode
-    if pressed_keys[pygame.K_SPACE]:
-            space_bar=True
+        if event.type== pygame.KEYDOWN:
+             if event.key == pygame.K_SPACE and not menu:
+                  space_bar=True
     
     if menu:
         screen.fill("black")
-        text_surface = font_1.render("Name: " + name, True, "white")
-        screen.blit(text_surface, (200, 200))
+        text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=450,y_position=60)
+        text(font_size=50,text='name: '+name,x_position=300,y_position=300,centering=False)
         clock.tick(120)
         pygame.display.flip()
-
 
 
     if lives>0 and rectangle_list!=[rect_2] and not space_bar and not menu:        
@@ -155,28 +179,21 @@ while running:
             screen.blit(heart_surface,(800+i*30,40))
         screen.blit(text_2,(800+(100-text_2_width)/2,0))
         #Punkte
-        text_points = font_2.render("Points: "+str(points), True, (255, 255, 255))
-        text_points = pygame.transform.scale(text_points, (100, 20))
-        screen.blit(text_points,(800,110))
+        text(font_size=30,text='Points: '+str(points),centering=False,x_position=800,y_position=110,scale=True,scale_x=100,scale_y=20)
         #Scoreboard
         j=0
-        scoreboard_text = font_2.render('Scoreboard', True, (255, 255, 255))
-        scoreboard_text = pygame.transform.scale(scoreboard_text, (100, 20))
-        screen.blit(scoreboard_text,(800,160))
+        text(font_size=30,text='Scoreboard',centering=False, x_position=800,y_position=160,scale=True,scale_x=100,scale_y=20)
+        
         with open('scoreboard.csv', mode='r', newline='') as file:
             reader = csv.reader(file)
             for row in reader:
                 j+=1
-                player_1 = font_2.render(row[0]+" "+row[1], True, (255, 255, 255))
-                player_1 = pygame.transform.scale(player_1, (100, 20))
-                screen.blit(player_1,(800,160+j*30))
+                text(font_size=30,text=row[0]+' '+row[1],scale=True,centering=False,scale_x=100,scale_y=20,x_position=800,y_position=160+j*30)
         j=0
 
-        pause_text = font_2.render("press spacebar to pause game or q for quit", True, (255, 255, 255))
-        screen.blit(pause_text,(250,750))
+        text(font_size=30,text='press spacebar to pause game or esc to quit',x_position=450,y_position=750)
         pygame.display.flip()
         clock.tick(120)
-
 
     if lives<=0:
         screen.fill("Black")
@@ -186,7 +203,7 @@ while running:
             screen.blit(text_1_1,(random.randint(0,800),random.randint(0,800)))
         if lives==0:
             with open('scoreboard.csv', mode='a', newline='') as file:
-                            writer = csv.writer(file)  # CSV-Writer erstellen
+                            writer = csv.writer(file) 
                             writer.writerow([str(name),points])
         lives-=1
         screen.blit(image,(image_x,image_y))
@@ -194,10 +211,13 @@ while running:
         pygame.display.flip()
     if rectangle_list == [rect_2] and lives >0:
         screen.fill("Black")
-        screen.blit(text_points,(400,400))
-        with open('scoreboard.csv', mode='a', newline='') as file:
-                        writer = csv.writer(file)  # CSV-Writer erstellen
-                        writer.writerow([str(name),points])
+        text(font_size=50,text='Nice you won!',x_position=450,y_position=450)
+        text(font_size=50,text=str(points),x_position=450,y_position=500)
+        if one_run==1:
+            with open('scoreboard.csv', mode='a', newline='') as file:
+                            writer = csv.writer(file) 
+                            writer.writerow([str(name),points])
+        one_run+=1
         clock.tick(120)
         pygame.display.flip()
     if space_bar and lives>0 and not menu:  
@@ -205,7 +225,7 @@ while running:
             space_bar=False
         screen.fill("Black")
         text_line1 = font_2.render("Points: " + str(points), True, (255, 255, 255))
-        text_line2 = font_2.render("press c to continue or q for quit", True, (255, 255, 255))
+        text_line2 = font_2.render("press c to continue or esc for quit", True, (255, 255, 255))
         screen.blit(text_line1, (380, 400))
         screen.blit(text_line2, (250, 430))
         clock.tick(120)
