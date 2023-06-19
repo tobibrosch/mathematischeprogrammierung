@@ -2,6 +2,29 @@ import pygame
 import random
 from math import sqrt
 import csv
+
+class rectangles():
+    def __init__(self,x_size,y_size,x_position,y_position,hit_counter):
+        self.x_size = x_size
+        self.y_size = y_size
+        self.x_position = x_position
+        self.y_position = y_position
+        self.hit_counter = hit_counter
+    def get_rectangle(self):
+        return pygame.Rect(self.x_position,self.y_position,self.x_size,self.y_size)
+    def draw_rectangles(self):
+        print("draw rectangles")
+        rect = pygame.Rect(self.x_position,self.y_position,self.x_size,self.y_size)
+        if self.hit_counter==1:
+            rectangle_color="purple"
+        if self.hit_counter==2:
+            rectangle_color="green"
+        if self.hit_counter==3:
+            rectangle_color="yellow"
+        pygame.draw.rect(screen, rectangle_color ,rect)
+    def hits(self):
+        print(self.hit_counter)
+
 def moving_rect(dt):
     global x_speed, y_speed,rectangle_list,dx,dy,lives, points
     rect_1.x += x_speed * dt * dx
@@ -125,8 +148,7 @@ with open('scoreboard.csv', mode='a', newline='') as file:
    writer = csv.writer(file) 
 
 
-
-
+rect_test_list = [rectangles(90,20,i*100+5,j*25,random.randint(1,3)) for i in range(8) for j in range(4)]
 one_run = 1 
 name=""
 input = False
@@ -150,11 +172,26 @@ while running:
                 else:
                     name += event.unicode
         if event.type== pygame.KEYDOWN:
-             if event.key == pygame.K_SPACE and not menu:
-                  space_bar=True
+            if event.key == pygame.K_SPACE and not menu:
+                space_bar=True
+            #test für mehrere hits 
+            if event.key == pygame.K_r:
+                if rect_test_list!=[]:
+                    new_hit=rect_test_list[0].hit_counter-1
+                    rect_to_append = rect_test_list[0]
+                    rect_to_append.hit_counter = new_hit
+                    rect_test_list.remove(rect_test_list[0])
+                    if new_hit>0:
+                        rect_test_list.insert(0,rect_to_append)
+                else:
+                    pass
+
     
     if menu:
         screen.fill("black")
+        for rectto in rect_test_list:
+             rectto.draw_rectangles()
+    
         text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=450,y_position=60)
         text(font_size=50,text='name: '+name,x_position=300,y_position=300,centering=False)
         clock.tick(120)
@@ -207,6 +244,7 @@ while running:
                             writer.writerow([str(name),points])
         lives-=1
         screen.blit(image,(image_x,image_y))
+        pygame.time.delay(200)
         clock.tick(120)
         pygame.display.flip()
     if rectangle_list == [rect_2] and lives >0:
