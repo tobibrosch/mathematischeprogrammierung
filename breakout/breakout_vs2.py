@@ -24,6 +24,7 @@ class rectangles():
             rectangle_color="yellow"
         pygame.draw.rect(screen, rectangle_color ,rect)
 
+
 class balls():
     def __init__(self, x_position_ball, y_position_ball, x_size, y_size, x_speed,y_speed,dx,dy,surface):
         self.x_size = x_size
@@ -47,7 +48,7 @@ class balls():
 
 
 def moving_rect(dt):
-    global lives, points, rect_test_list, ball_list_class,game_over,timer_floor_1,change_color_floor
+    global lives, points, rect_test_list, ball_list_class,timer_floor_1,change_color_floor, game_state
     for ball in ball_list_class:
         if ball.get_ball().top < 0:
             ball.y_speed*= -1
@@ -57,7 +58,7 @@ def moving_rect(dt):
                 ball_list_class.append(balls(400,400,10,10,0,400,0,1,screen))
                 lives-=1
                 if lives<=0:
-                     game_over=True
+                     game_state='game_over'
         elif ball.get_ball().left < 0 or ball.get_ball().right > 800:
             ball.x_speed *= -1
             if ball.get_ball().left<0:
@@ -121,23 +122,9 @@ image_width = image.get_width()
 image_height = image.get_height()
 image_x = (screen_width - image_width) // 2  
 image_y = (screen_height - image_height) // 2
+# weißer rahmen!
 frame_set = pygame.Rect(0,0,800,740)
 
-#punktesystem
-
-
-font_1 = pygame.font.Font(None, 50)  # Schriftart und Schriftgröße festlegen
-text_1 = font_1.render("YOU LOSE!", True, (255, 255, 255))  # text_1 rendern
-text_1_width = text_1.get_width()
-text_1_height = text_1.get_height()
-text_1_x = (screen_width - text_1_width) // 2  # x-Position für die horizontale Ausrichtung
-text_1_y = (screen_height - text_1_height) // 2  # y-Position für die vertikale Ausrichtung
-font_2 = pygame.font.Font(None, 36)
-text_2 = font_2.render("Lives", True, (255, 255, 255))
-text_2_width = text_2.get_width()
-text_2_height = text_2.get_height()
-text_2_x = (screen_width - text_2_width) // 2  # x-Position für die horizontale Ausrichtun
-text_2_y = (screen_height - text_2_height) // 2 
 
 def text(font='Arial',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
    text_font = pygame.font.SysFont(font,font_size)
@@ -158,9 +145,7 @@ def text(font='Arial',font_size=10,text='',color=(255,255,255),x_position=0,y_po
             screen.blit(text_shown,(x_position,y_position))
 
 
-losing_list = []
-for i in range(1,10):
-            losing_list.append(text_1)
+
 
 #scoreboard 
 
@@ -168,8 +153,8 @@ with open('scoreboard.csv', mode='a', newline='') as file:
    writer = csv.writer(file) 
 
 #rechtecke
-floor = rectangles(100,10,350,700,0)
-rect_test_list = [rectangles(90,20,i*100+5,j*25+5,random.randint(1,3)) for i in range(8) for j in range(4)]
+floor = rectangles(50,10,350,700,0)
+rect_test_list = [rectangles(90,20,i*100+5,j*25+5,random.randint(1,3)) for i in range(8) for j in range(8)]
 rect_test_list.append(floor)
 
 
@@ -179,23 +164,23 @@ lives=3
 one_run = 1 
 name=""
 running = True
-reset_game=False
-menu = True
+input_text=True
 moving_text_menu=True
 moving_text_game=True
 change_color_floor=False
 x,y,z=230,230,230
 x_text_moving_menu=0
 x_text_moving_game=0
-reset_pressed=False
-game_over = False
+x_text_moving_loosing = 0
+moving_text_loosing=True
 #Bälle
 ball_1 =  balls(390,300,10,10,0,400,0,1,screen)
 ball_2 =  balls(390,200,10,10,0,400,0,1,screen)
+ball_4 =  balls(370,200,10,10,0,400,0,1,screen)
 ball_3 =  balls(390,200,10,10,300,300,0.6,0.8,screen)
-ball_list_class = [ball_1,ball_2]
+ball_list_class = [ball_1]
 
-
+game_state='menu'
 
 while running:
     # Beende durch X drücken oder q
@@ -203,27 +188,46 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT or pressed_keys[pygame.K_ESCAPE]:
             running = False
-        if menu:
+        if game_state=='menu' and input_text:
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_RETURN:
-                    menu=False
+                if event.key == pygame.K_RETURN and name!='':
+                    input_text=False
                 elif event.key == pygame.K_BACKSPACE:
                     name = name[:-1]
-                else:
+                elif event.key != pygame.K_RETURN:
                     name += event.unicode
         if event.type== pygame.KEYDOWN:
-            if event.key == pygame.K_SPACE and not menu:
-                space_bar=True
-            if event.key == pygame.K_t and game_over and lives<=0:
+            if event.key == pygame.K_c and game_state=='pause':
+                game_state='game'
+            if event.key == pygame.K_SPACE and game_state=='game':
+                game_state='pause'
+            if event.key == pygame.K_t and game_state=='game_over':
                 ball_list_class = [ball_1,ball_2]
                 rect_test_list = [rectangles(90,20,i*100+5,j*25+5,random.randint(1,3)) for i in range(8) for j in range(4)]
                 rect_test_list.append(floor)
                 floor.x_position=350
                 points=0
                 lives=4
-                game_over=True
+                game_state='game'
+            if event.key == pygame.K_t and (game_state=='game_over' or game_state=='game_won'):
+                ball_list_class = [ball_1,ball_2]
+                rect_test_list = [rectangles(90,20,i*100+5,j*25+5,random.randint(1,3)) for i in range(8) for j in range(4)]
+                rect_test_list.append(floor)
+                floor.x_position=350
+                points=0
+                lives=4
+                game_state='game'
+            if event.key == pygame.K_s and game_state=='menu':
+                 game_state='menu+settings'
+            if event.key == pygame.K_r and game_state=='menu+settings':
+                 game_state='menu'
+            if event.key == pygame.K_RETURN and game_state=='menu' and not input_text:
+                 game_state='game'
+            
+    if lives >0 and rect_test_list==[floor]:
+        game_state='game_won'            
 
-    if menu:
+    if game_state=='menu':
         dt = clock.tick(120)/1000
         screen.fill("black")
         if ball_3.x_position_ball >900 or ball_3.x_position_ball<0:
@@ -254,10 +258,17 @@ while running:
              x_text_moving_menu=-1
 
         text(font_size=50,text='name: '+name,x_position=300,y_position=300,centering=False)
+        
+
         clock.tick(120)
         pygame.display.flip()
-
-    if lives>0 and rect_test_list!=[floor] and not space_bar and not menu or reset_pressed:        
+    if game_state=='menu+settings':
+        screen.fill("black")
+        text(font_size=50,text='name: '+name,x_position=450,y_position=20)
+        clock.tick(120)
+        pygame.display.flip()  
+    if game_state=='game':
+    #if lives>0 and rect_test_list!=[floor] and not space_bar and not menu or reset_pressed:        
         screen.fill("black")
         pygame.draw.rect(screen,"white",frame_set,5)
         dt = clock.tick(120) / 1000
@@ -283,8 +294,8 @@ while running:
 
         #Leben
         for i in range(lives):
-            screen.blit(heart_surface,(800+i*30,40))
-        screen.blit(text_2,(800+(100-text_2_width)/2,0))
+            screen.blit(heart_surface,(800+i*33,40))
+        text(font_size=30,text='Lives',x_position=850,y_position=15)
         #Punkte
         text(font_size=30,text='Points: '+str(points),centering=False,x_position=800,y_position=110,scale=True,scale_x=100,scale_y=20)
         #Scoreboard
@@ -310,26 +321,35 @@ while running:
              x_text_moving_game=-1
         pygame.display.flip()
         clock.tick(120)
-
-    if lives<=0 and game_over:
+    if game_state=='game_over':
         screen.fill("Black")
-        screen.blit(text_1,(text_1_x,text_1_y))
-        text(font_size=50,text='press t to play again or q to quit',x_position=450,y_position=500)
-        for text_1_1 in losing_list:
-            random.randint(0,800)
-            screen.blit(text_1_1,(random.randint(0,800),random.randint(0,800)))
+        text(font_size=50,text='press t to play again or q to quit',x_position=450,y_position=450)
         if lives==0:
             with open('scoreboard.csv', mode='a', newline='') as file:
                             writer = csv.writer(file) 
                             writer.writerow([str(name),points])
         lives=-1
-        
+        timer_loosing= pygame.time.get_ticks()
+        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=775)
+        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=775)
+        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=25)
+        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=25)
+        if moving_text_loosing == True:
+            timer_loosing_2 = pygame.time.get_ticks()
+            moving_text_loosing=False
+            x_text_moving_loosing+=3
+        if timer_loosing- timer_loosing_2 >=5:
+             moving_text_loosing=True
+        if x_text_moving_loosing>900:
+             x_text_moving_loosing=-1
         clock.tick(120)
         pygame.display.flip()
-    if rect_test_list == [floor] and lives >0:
+    if game_state=='game_won':
         screen.fill("Black")
         text(font_size=50,text='Nice you won!',x_position=450,y_position=450)
-        text(font_size=50,text=str(points),x_position=450,y_position=500)
+        text(font_size=50,text='you have gained. '+str(points)+' points!',x_position=450,y_position=500)
+        text(font_size=50,text='If you want to play again',x_position=450,y_position=550)
+        text(font_size=50,text='press t or q to quit the game!',x_position=450,y_position=600)
         if one_run==1:
             with open('scoreboard.csv', mode='a', newline='') as file:
                             writer = csv.writer(file) 
@@ -338,9 +358,7 @@ while running:
         one_run+=1
         clock.tick(120)
         pygame.display.flip()
-    if space_bar and lives>0 and not menu:  
-        if pressed_keys[pygame.K_c]:
-            space_bar=False
+    if game_state=='pause':
         screen.fill("Black")
         text(font_size=30,text='Points: '+str(points),x_position=450,y_position=400)
         text(font_size=30,text='press c to continue or esc for quit',x_position=450,y_position=450)
