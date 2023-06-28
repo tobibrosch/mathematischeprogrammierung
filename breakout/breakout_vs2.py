@@ -3,7 +3,7 @@ import random
 from math import sqrt
 import csv
 from rgbcsv import color_tupels
-
+from math import sin, cos, pi
 class moving_bar:
     def __init__(self, x, y,width,heigth,length,y_offset):
         self.x = x
@@ -60,6 +60,30 @@ class formation_rects():
         pygame.draw.rect(screen,self.color,rect)
     def formation_tupel(self):
         return (self.x_tupel,self.y_tupel)
+
+class rotating_letter():
+    def __init__(self,letter,starting_angle,color,radius):
+        self.letter = letter
+        self.starting_angle = starting_angle
+        self.color = color
+        self.radius = radius
+        self.font = pygame.font.Font(None, 36)
+
+    def show_rotating_letter(self):
+        letter_x = 450 - int(self.radius* sin(2*pi*(text_rotation_angle-self.starting_angle)/360))
+        letter_y = 500 - int(self.radius* cos(2*pi*(text_rotation_angle-self.starting_angle)/360))
+
+        letter_show = self.font.render(self.letter, True, self.color)
+
+        letter_rect = letter_show.get_rect()
+        
+        letter_rect.center=(letter_x,letter_y)
+        
+        letter_rotated = pygame.transform.rotate(letter_show,text_rotation_angle-self.starting_angle)
+
+        letter_rotated_rect = letter_rotated.get_rect(center=letter_rect.center)
+
+        screen.blit(letter_rotated,letter_rotated_rect)
 
 
     
@@ -260,7 +284,6 @@ name_left=True
 difficulty_level='easy'
 floor_x_speed=600
 running = True
-input_text=False
 moving_text_menu=True
 moving_text_game=True
 change_color_floor=False
@@ -298,7 +321,13 @@ moving_bar_2 = moving_bar(480,111,138,34,138,40)
 moving_bar_3 = moving_bar(713,111,75,34,75,40)
 moving_bar_4 = moving_bar(42,408,290,34,290,40)
 moving_bar_5 = moving_bar(42,508,290,34,278,40)
-
+#roation
+text_rotation_aktivated=True
+text_rotation_angle=0
+radius_aktive=False
+radius_increase=0
+timer_radius_aktive=True
+shrinking_radius=False
 while running:
     #print(pygame.mouse.get_pos())
     pressed_keys = pygame.key.get_pressed()
@@ -307,13 +336,9 @@ while running:
             running = False
         if game_state=='menu':
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_SPACE:
-                     input_text=True
-                if event.key == pygame.K_RETURN and name!='' and input_text:
-                    input_text=False
-                elif event.key == pygame.K_BACKSPACE and input_text:
+                if event.key == pygame.K_BACKSPACE and name!='':
                     name = name[:-1]
-                elif event.key != pygame.K_RETURN and input_text:
+                elif event.key != pygame.K_RETURN and event.key != (pygame.K_BACKSPACE or pygame.K_ESCAPE) and (event.unicode.isalpha() or event.key==pygame.K_SPACE):
                     name += event.unicode
         if event.type== pygame.KEYDOWN:
             if event.key == pygame.K_c and game_state=='pause':
@@ -334,7 +359,7 @@ while running:
             if mouse_location().colliderect(pygame.Rect(10,750,40,40)):
                 game_state='menu+settings'
             if mouse_location().colliderect(pygame.Rect(400,470,100,60)) and not name_left:
-                game_state='game'
+                shrinking_radius=True
     
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
@@ -368,7 +393,9 @@ while running:
                 formation_safed=False
             
     
-        
+    if radius_increase<-500 and game_state=='menu':
+        game_state='game'
+
     if name.strip()=='':
         name_left=True
     else:   
@@ -405,9 +432,43 @@ while running:
                 ball.y_speed*=-1
             ball.draw_ball(dt)
 
-        
-      
+        #mr worldwide
+        text_rotation_timer_1 = pygame.time.get_ticks()
 
+    
+        letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
+        #pygame.draw.circle(screen, 'white', (450,500), 100, 1)
+        timer_radius_1=pygame.time.get_ticks()
+        for letters in letter_ring:
+            letters.color=(color_green,color_red,color_blue)
+            letters.radius=100+radius_increase
+            letters.show_rotating_letter()
+
+        
+        if radius_aktive and not shrinking_radius:
+                timer_radius_1=pygame.time.get_ticks()
+                if timer_radius_aktive and radius_increase<180:
+                    timer_radius_2=pygame.time.get_ticks()
+                    timer_radius_aktive=False
+                    letters.radius=100+radius_increase
+                    radius_increase+=1
+                if timer_radius_1-timer_radius_2>10:
+                    timer_radius_aktive=True
+        elif radius_increase>=0 and not shrinking_radius:
+            radius_increase-=2
+        elif shrinking_radius:
+            radius_increase-=7
+        
+
+
+        if text_rotation_aktivated:
+            text_rotation_timer_2=pygame.time.get_ticks()
+            text_rotation_aktivated=False
+            text_rotation_angle+=1
+        if text_rotation_timer_1-text_rotation_timer_2>2:
+            text_rotation_aktivated=True
+       
+        #new lines 
         timer_1 = pygame.time.get_ticks()
         text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
         text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=-450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
@@ -435,7 +496,7 @@ while running:
              moving_text_menu=True
         if x_text_moving_menu>900:
              x_text_moving_menu=-1
-        text(font_size=20,text='press space to enter name',x_position=450,y_position=250)
+        text(font_size=20,text='enter name',x_position=450,y_position=250)
         rectangles(400,5,250,350,0).draw_rectangles()
 
         text(font_size=50,text=name.strip(),x_position=450,y_position=300,centering=True,color=(255,0,200))
@@ -452,11 +513,12 @@ while running:
             y=image_settings.get_height()
             x=image_settings.get_width()
         
-        if mouse_location().colliderect(pygame.Rect(392,479,120,50)):
+        if mouse_location().colliderect(pygame.Rect(392,479,120,50)) and not shrinking_radius:
                 text(font_size=50,text='start',x_position=450,y_position=500,color=(255,20,200))
-        else:
+                radius_aktive=True
+        elif not mouse_location().colliderect(pygame.Rect(392,479,120,50)) and not shrinking_radius:
             text(font_size=60,text='start',x_position=450,y_position=500,color=(255,20,200))
-        
+            radius_aktive=False
         
 
         screen.blit(image_settings,(30-x/2,770-y/2))
