@@ -42,7 +42,26 @@ class moving_bar:
                 self.text_movingbar_x -= 8
 
         pygame.draw.rect(screen,'white',pygame.Rect(self.x,self.y+self.y_offset,self.text_movingbar_x,5),border_radius=5)        
-    
+
+class formation_rects():
+    def __init__(self,x_tupel,y_tupel):
+        self.color = 'white'
+        self.x_tupel =x_tupel
+        self.y_tupel =y_tupel
+        self.selected = False
+    def get_formation_rect(self):
+        return pygame.Rect(self.x_tupel*60+215,self.y_tupel*50+25,50,15)
+    def draw_formation_rect(self):
+        rect = pygame.Rect(self.x_tupel*60+215,self.y_tupel*50+25,50,15)
+        if self.selected:
+            self.color='purple'
+        elif not self.selected:
+            self.color='white'
+        pygame.draw.rect(screen,self.color,rect)
+    def formation_tupel(self):
+        return (self.x_tupel,self.y_tupel)
+
+
     
 
 
@@ -227,6 +246,11 @@ formation_1 = [(3,0),(4,0),(1,1),(2,1),(5,1),(6,1),(0,2),(1,2),(2,2),(5,2),(6,2)
 rect_test_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3)) for i,j in formation_1 ]
 rect_test_list.append(floor)
 
+
+formation_list = [formation_rects(x,y) for x in range(8) for y in range(5)]
+seleceted_formation_list=[]
+formation_safed=False
+
 points=0
 timer_floor_1=1
 lives=3
@@ -268,13 +292,15 @@ color_tupel_index =0
 color_tupel_index_start =0
 snake_list = [pygame.Rect(i*10,0,10,10) for i in range(90)] + [pygame.Rect(890,10+i*10,10,10) for i in range(79)]+[pygame.Rect(890-i*10,790,10,10) for i in range(89)]+[pygame.Rect(0,790-i*10,10,10) for i in range(79)]
 rainbow_moving = True
-print(len(color_tupels))
+
 moving_bar_1 = moving_bar(310,111,90,34,80,40)
 moving_bar_2 = moving_bar(480,111,138,34,138,40)
 moving_bar_3 = moving_bar(713,111,75,34,75,40)
 moving_bar_4 = moving_bar(42,408,290,34,290,40)
+moving_bar_5 = moving_bar(42,508,290,34,278,40)
+
 while running:
-    # Beende durch X drücken oder q
+    #print(pygame.mouse.get_pos())
     pressed_keys = pygame.key.get_pressed()
     for event in pygame.event.get():
         if event.type == pygame.QUIT or pressed_keys[pygame.K_ESCAPE]:
@@ -307,27 +333,41 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu':
             if mouse_location().colliderect(pygame.Rect(10,750,40,40)):
                 game_state='menu+settings'
-               
+            if mouse_location().colliderect(pygame.Rect(400,470,100,60)) and not name_left:
+                game_state='game'
+    
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
                 game_state='menu'
-        if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu':
-             if mouse_location().colliderect(pygame.Rect(400,470,100,60)) and not name_left:
-                game_state='game'
-        
-        if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
-             if mouse_location().colliderect(pygame.Rect(300,100,130,40)):
+            if mouse_location().colliderect(pygame.Rect(300,100,130,40)):
                 difficulty_level='easy'
-        if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
-             if mouse_location().colliderect(pygame.Rect(480,100,150,40)):
+            if mouse_location().colliderect(pygame.Rect(480,100,150,40)):
                 difficulty_level='medium'
-        if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
-             if mouse_location().colliderect(pygame.Rect(700,100,100,40)):
+            if mouse_location().colliderect(pygame.Rect(700,100,100,40)):
                 difficulty_level='hard'
+            if mouse_location().colliderect(pygame.Rect(40,500,278,40)):
+                game_state='menu+settings+formation'
         if event.type == pygame.MOUSEBUTTONUP and game_state=='menu+settings':
-             if mouse_location().colliderect(pygame.Rect(40,400,200,40)):
+             if mouse_location().colliderect(pygame.Rect(40,400,300,40)):
                 with open('scoreboard.csv', mode='w', newline='') as file:
                     writer = csv.writer(file) 
+
+        if event.type == pygame.MOUSEBUTTONUP and game_state=='menu+settings+formation':
+            if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
+                game_state='menu+settings'
+            for formation_rect in formation_list:
+                if mouse_location().colliderect(formation_rect.get_formation_rect()) and not formation_rect.selected and formation_rect.formation_tupel() not in seleceted_formation_list:
+                    formation_rect.selected=True
+                    seleceted_formation_list.append(formation_rect.formation_tupel())
+                elif mouse_location().colliderect(formation_rect.get_formation_rect()) and formation_rect.selected and formation_rect.formation_tupel() in seleceted_formation_list:
+                    formation_rect.selected=False
+                    seleceted_formation_list.remove(formation_rect.formation_tupel())
+            if mouse_location().colliderect(pygame.Rect(413,363,77,40)) and not formation_safed:
+                formation_safed=True
+            elif mouse_location().colliderect(pygame.Rect(413,363,77,40)) and formation_safed:
+                formation_safed=False
+            
+    
         
     if name.strip()=='':
         name_left=True
@@ -347,6 +387,9 @@ while running:
     
     if lives >0 and rect_test_list==[floor]:
         game_state='game_won'            
+    if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
+        rect_test_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3)) for i,j in seleceted_formation_list]
+        rect_test_list.append(floor)
 
     if game_state=='menu':
         dt = 0.001
@@ -369,7 +412,7 @@ while running:
         text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
         text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=-450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
         
-
+        
         if moving_text_menu == True:
             timer_2 = pygame.time.get_ticks()
             moving_text_menu=False
@@ -388,8 +431,6 @@ while running:
             x_text_moving_menu+=3
 
 
-
-    
         if timer_1 - timer_2 >=5:
              moving_text_menu=True
         if x_text_moving_menu>900:
@@ -429,7 +470,7 @@ while running:
         for snake in snake_list:
             pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
             color_tupel_index+=1
-            if color_tupel_index>337:
+            if color_tupel_index>338:
                 color_tupel_index=0
         if timer_rainbow_1-timer_rainbow_2>1000:
             rainbow_moving=True
@@ -448,6 +489,11 @@ while running:
             text(font_size=40,text='reset scoreboard',x_position=40,y_position=400,centering=False,color=(255,0,200))
         else:
             text(font_size=40,text='reset scoreboard',x_position=40,y_position=400,centering=False)
+        if mouse_location().colliderect(pygame.Rect(40,500,278,40)):
+            text(font_size=40,text='select formation',x_position=40,y_position=500,centering=False,color=(255,0,200))
+        else:
+            text(font_size=40,text='select formation',x_position=40,y_position=500,centering=False)
+
 
         text(font_size=40,text='difficulty level:',x_position=40,y_position=100,centering=False)
 
@@ -494,7 +540,35 @@ while running:
         moving_bar_2.update()
         moving_bar_3.update()
         moving_bar_4.update()
+        moving_bar_5.update()
 
+
+    if game_state=='menu+settings+formation':
+        screen.fill("black")
+        if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
+            text(font_size=40,text='back',x_position=780,y_position=760)
+        else:
+            text(font_size=30,text='back',x_position=780,y_position=760)
+        
+        [formation_list[i].draw_formation_rect() for i in range(len(formation_list))]
+        if mouse_location().colliderect(pygame.Rect(413,363,77,40)) or formation_safed:
+            text(font_size=40,text='safe',x_position=450,y_position=380,color=(255,0,200))
+        else:
+            text(font_size=40,text='safe',x_position=450,y_position=380)
+
+
+        timer_rainbow_1 = pygame.time.get_ticks()
+        if rainbow_moving:
+            timer_rainbow_2= pygame.time.get_ticks()
+            color_tupel_index+=1
+            rainbow_moving=False
+        for snake in snake_list:
+            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
+            color_tupel_index+=1
+            if color_tupel_index>338:
+                color_tupel_index=0
+        if timer_rainbow_1-timer_rainbow_2>1000:
+            rainbow_moving=True
 
     if game_state=='game':      
         screen.fill("black")
@@ -611,11 +685,11 @@ while running:
         screen.fill("Black")
         for ball in ball_list_menu:
             if ball.x_position_ball >900 or ball.x_position_ball<0:
-                if len(ball_list_menu)<30:
+                if len(ball_list_menu)<300:
                     ball_list_menu.append(balls(random.randint(100,800),random.randint(100,800),10,10,random.choice([-1,1])*300,random.choice([-1,1])*300,0.6,0.8,screen,random.choice(ball_colors)))
                 ball.x_speed*=-1
             if ball.y_position_ball >800 or ball.y_position_ball<0:
-                if len(ball_list_menu)<30:
+                if len(ball_list_menu)<300:
                     ball_list_menu.append(balls(random.randint(100,800),random.randint(100,800),10,10,random.choice([-1,1])*300,random.choice([-1,1])*300,0.6,0.8,screen,random.choice(ball_colors)))
                 ball.y_speed*=-1
             ball.draw_ball(0.005)
@@ -629,7 +703,7 @@ while running:
         for snake in snake_list:
             pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
             color_tupel_index+=1
-            if color_tupel_index>337:
+            if color_tupel_index>338:
                 color_tupel_index=0
         if timer_rainbow_1-timer_rainbow_2>10:
             rainbow_moving=True
