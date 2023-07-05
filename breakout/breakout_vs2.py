@@ -4,6 +4,7 @@ from math import sqrt
 import csv
 from rgbcsv import color_tupels
 from math import sin, cos, pi
+
 class moving_bar:
     def __init__(self, x, y,width,heigth,length,y_offset):
         self.x = x
@@ -43,6 +44,42 @@ class moving_bar:
 
         pygame.draw.rect(screen,'white',pygame.Rect(self.x,self.y+self.y_offset,self.text_movingbar_x,5),border_radius=5)        
 
+class button():
+    def __init__(self,text,text_size,x_position,y_position,inner_color,frame_color,text_color):
+        self.text = text
+        self.text_size = text_size
+        self.x_position = x_position
+        self.y_position = y_position
+        self.inner_color = inner_color
+        self.frame_color = frame_color
+        self.text_color = text_color
+        self.new_size = text_size
+        self.new_frame_color = frame_color
+        self.button_frame = pygame.Rect(0,0,0,0)
+    def draw_button(self): 
+        text_font = pygame.font.SysFont('courier',self.text_size)
+        text_shown = text_font.render(self.text, True, self.text_color)
+        text_width = text_shown.get_width()
+        text_height = text_shown.get_height()
+        inner_button = pygame.Rect(self.x_position-text_width/2-5,self.y_position-text_height/2-5,10+text_width,10+text_height)
+        self.button_frame= pygame.Rect(self.x_position-text_width/2-10,self.y_position-text_height/2-10,20+text_width,20+text_height)
+        pygame.draw.rect(screen,self.inner_color,inner_button,border_radius=25)
+        pygame.draw.rect(screen,self.frame_color,self.button_frame,5,border_radius=30)
+        screen.blit(text_shown,(self.x_position-text_width/2,self.y_position-text_height/2))
+    def get_button(self):
+        return self.button_frame
+    def update(self):
+        if mouse_location().colliderect(self.button_frame):
+            self.frame_color='green'
+            self.text_size=self.new_size
+            return True
+        else:
+            self.frame_color=self.new_frame_color
+            self.text_size=self.new_size-5
+            return False
+
+
+
 class formation_rects():
     def __init__(self,x_tupel,y_tupel):
         self.color = 'white'
@@ -67,11 +104,13 @@ class rotating_letter():
         self.starting_angle = starting_angle
         self.color = color
         self.radius = radius
-        self.font = pygame.font.Font(None, 36)
+        self.font = pygame.font.SysFont('gadugi', 36)
+        self.x_position = 450
+        self.y_position = 500
 
     def show_rotating_letter(self):
-        letter_x = 450 - int(self.radius* sin(2*pi*(text_rotation_angle-self.starting_angle)/360))
-        letter_y = 500 - int(self.radius* cos(2*pi*(text_rotation_angle-self.starting_angle)/360))
+        letter_x = self.x_position - int(self.radius* sin(2*pi*(text_rotation_angle-self.starting_angle)/360))
+        letter_y = self.y_position - int(self.radius* cos(2*pi*(text_rotation_angle-self.starting_angle)/360))
 
         letter_show = self.font.render(self.letter, True, self.color)
 
@@ -231,7 +270,7 @@ image_y = (screen_height - image_height) // 2
 frame_set = pygame.Rect(0,0,800,740)
 
 
-def text(font='Arial',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
+def text(font='courier',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
    text_font = pygame.font.SysFont(font,font_size)
    text_shown = text_font.render(text, True, color)
    text_font_width = text_shown.get_width()
@@ -321,6 +360,7 @@ moving_bar_2 = moving_bar(480,111,138,34,138,40)
 moving_bar_3 = moving_bar(713,111,75,34,75,40)
 moving_bar_4 = moving_bar(42,408,290,34,290,40)
 moving_bar_5 = moving_bar(42,508,290,34,278,40)
+moving_bars_list=[moving_bar_1,moving_bar_2,moving_bar_3,moving_bar_4,moving_bar_5]
 #roation
 text_rotation_aktivated=True
 text_rotation_angle=0
@@ -328,6 +368,16 @@ radius_aktive=False
 radius_increase=0
 timer_radius_aktive=True
 shrinking_radius=False
+color_tupel_index_ring=0
+#buttons
+menu_button = button('menu',40,450,450,'navy','white','white')
+resume_button = button('resume',20,550,450,'navy','white','white')
+start_button =  button('start',50,450,500,'navy','white',(255,0,200))
+safe_button =  button('safe',50,450,450,'black','white','white')
+quit_button =  button('quit',40,750,450,'navy','white','white')
+play_again_button = button('play again',40,450,450,'navy','white','white')
+#
+reset_game=False
 while running:
     #print(pygame.mouse.get_pos())
     pressed_keys = pygame.key.get_pressed()
@@ -354,13 +404,32 @@ while running:
                 points=0
                 lives=4
                 game_state='game'
-
+        
+        if event.type == pygame.MOUSEBUTTONDOWN and (game_state=='game_over' or game_state=='game_won'):
+            if mouse_location().colliderect(play_again_button.get_button()):
+                reset_game=True
+                game_state='game'
+            if mouse_location().colliderect(menu_button.get_button()):
+                reset_game=True
+                game_state='menu'
+            if mouse_location().colliderect(quit_button.get_button()):
+                running=False
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu':
             if mouse_location().colliderect(pygame.Rect(10,750,40,40)):
                 game_state='menu+settings'
-            if mouse_location().colliderect(pygame.Rect(400,470,100,60)) and not name_left:
+                #fehler da NOne und kein rect 
+            if mouse_location().colliderect(start_button.get_button()) and not name_left:
                 shrinking_radius=True
-    
+
+        if event.type == pygame.MOUSEBUTTONDOWN and game_state=='pause':
+            if mouse_location().colliderect(resume_button.get_button()):
+                game_state='game'
+            if mouse_location().colliderect(menu_button.get_button()):
+                game_state='menu'
+                radius_increase=0
+                shrinking_radius=False
+
+        
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
                 game_state='menu'
@@ -387,14 +456,29 @@ while running:
                 elif mouse_location().colliderect(formation_rect.get_formation_rect()) and formation_rect.selected and formation_rect.formation_tupel() in seleceted_formation_list:
                     formation_rect.selected=False
                     seleceted_formation_list.remove(formation_rect.formation_tupel())
-            if mouse_location().colliderect(pygame.Rect(413,363,77,40)) and not formation_safed:
+            if mouse_location().colliderect(safe_button.get_button()) and not formation_safed and seleceted_formation_list!=[]:
                 formation_safed=True
-            elif mouse_location().colliderect(pygame.Rect(413,363,77,40)) and formation_safed:
+            elif mouse_location().colliderect(safe_button.get_button()) and formation_safed:
                 formation_safed=False
-            
     
+    
+    if reset_game:
+        reset_game=False
+        ball_1 =  balls(390,300,10,10,0,700,0,1,screen,'red')
+        ball_list_class = [ball_1]
+        rect_test_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+        rect_test_list.append(floor)
+        floor.x_position=350
+        points=0
+        lives=4
+        radius_increase=0
+        shrinking_radius=False
+
+
     if radius_increase<-500 and game_state=='menu':
         game_state='game'
+    
+    
 
     if name.strip()=='':
         name_left=True
@@ -413,7 +497,8 @@ while running:
     
     
     if lives >0 and rect_test_list==[floor]:
-        game_state='game_won'            
+        game_state='game_won'   
+
     if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
         rect_test_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3)) for i,j in seleceted_formation_list]
         rect_test_list.append(floor)
@@ -421,6 +506,9 @@ while running:
     if game_state=='menu':
         dt = 0.001
         screen.fill("black")
+        
+    
+        
         for ball in ball_list_menu:
             if ball.x_position_ball >900 or ball.x_position_ball<0:
                 if len(ball_list_menu)<30:
@@ -433,17 +521,16 @@ while running:
             ball.draw_ball(dt)
 
         #mr worldwide
-        text_rotation_timer_1 = pygame.time.get_ticks()
 
     
         letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
         #pygame.draw.circle(screen, 'white', (450,500), 100, 1)
         timer_radius_1=pygame.time.get_ticks()
         for letters in letter_ring:
-            letters.color=(color_green,color_red,color_blue)
             letters.radius=100+radius_increase
             letters.show_rotating_letter()
 
+        
         
         if radius_aktive and not shrinking_radius:
                 timer_radius_1=pygame.time.get_ticks()
@@ -461,6 +548,7 @@ while running:
         
 
 
+        text_rotation_timer_1 = pygame.time.get_ticks()
         if text_rotation_aktivated:
             text_rotation_timer_2=pygame.time.get_ticks()
             text_rotation_aktivated=False
@@ -469,9 +557,16 @@ while running:
             text_rotation_aktivated=True
        
         #new lines 
+        
+        
+
+        
+        
+
+        #new
         timer_1 = pygame.time.get_ticks()
-        text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
-        text(font='Arial',font_size=50,text='Welcome to Breakout',x_position=-450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
+        text(font='courier',font_size=50,text='Welcome to Breakout',x_position=450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
+        text(font='courier',font_size=50,text='Welcome to Breakout',x_position=-450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
         
         
         if moving_text_menu == True:
@@ -513,12 +608,20 @@ while running:
             y=image_settings.get_height()
             x=image_settings.get_width()
         
-        if mouse_location().colliderect(pygame.Rect(392,479,120,50)) and not shrinking_radius:
-                text(font_size=50,text='start',x_position=450,y_position=500,color=(255,20,200))
+        if name.strip()=='' or shrinking_radius:
+            pass
+        else:
+            if ball_list_class[0].y_position_ball==300:
+                start_button.text='start'
+            else:
+                start_button.text='resume'
+            start_button.draw_button()
+            if start_button.update() and not shrinking_radius:   
                 radius_aktive=True
-        elif not mouse_location().colliderect(pygame.Rect(392,479,120,50)) and not shrinking_radius:
-            text(font_size=60,text='start',x_position=450,y_position=500,color=(255,20,200))
-            radius_aktive=False
+            elif not start_button.update() and not shrinking_radius:
+                radius_aktive=False
+            
+
         
 
         screen.blit(image_settings,(30-x/2,770-y/2))
@@ -596,13 +699,12 @@ while running:
         if timer_rainbow_1-timer_rainbow_2>10:
             rainbow_moving=True
     
+        for moving_bars in moving_bars_list:
+            moving_bars.update()
 
-    
-        moving_bar_1.update()
-        moving_bar_2.update()
-        moving_bar_3.update()
-        moving_bar_4.update()
-        moving_bar_5.update()
+    if not game_state=='menu+settings':
+        for moving_bars in moving_bars_list:
+            moving_bars.text_movingbar_x=0
 
 
     if game_state=='menu+settings+formation':
@@ -613,11 +715,19 @@ while running:
             text(font_size=30,text='back',x_position=780,y_position=760)
         
         [formation_list[i].draw_formation_rect() for i in range(len(formation_list))]
-        if mouse_location().colliderect(pygame.Rect(413,363,77,40)) or formation_safed:
-            text(font_size=40,text='safe',x_position=450,y_position=380,color=(255,0,200))
+        if formation_safed and seleceted_formation_list!=[]:
+            safe_button.text_color=(255,0,200)
+            safe_button.text='safed'
         else:
-            text(font_size=40,text='safe',x_position=450,y_position=380)
+            safe_button.text='safe'
+            safe_button.text_color='white'
 
+        
+        safe_button.draw_button()
+
+        if safe_button.update() and seleceted_formation_list==[]:
+            no_formation_text = button('no formation selected',30,450,550,'black','black','white')
+            no_formation_text.draw_button()
 
         timer_rainbow_1 = pygame.time.get_ticks()
         if rainbow_moving:
@@ -673,8 +783,8 @@ while running:
                 text(font_size=30,text=row[0]+' '+row[1],scale=True,centering=False,scale_x=100,scale_y=20,x_position=800,y_position=160+j*30)
         j=0
         timer_1 = pygame.time.get_ticks()
-        text(font='Arial',font_size=30,text='press spacebar to pause game or esc to quit',x_position=450+x_text_moving_game,y_position=775)
-        text(font='Arial',font_size=30,text='press spacebar to pause game or esc to quit',x_position=-450+x_text_moving_game,y_position=775)
+        text(font='courier',font_size=30,text='press spacebar to pause game or esc to quit',x_position=450+x_text_moving_game,y_position=775)
+        text(font='courier',font_size=30,text='press spacebar to pause game or esc to quit',x_position=-450+x_text_moving_game,y_position=775)
         if moving_text_game == True:
             timer_2 = pygame.time.get_ticks()
             moving_text_game=False
@@ -684,20 +794,29 @@ while running:
         if x_text_moving_game>900:
              x_text_moving_game=-1
         
-       
     if game_state=='game_over':
         screen.fill("Black")
-        text(font_size=50,text='press t to play again or esc to quit',x_position=450,y_position=450)
+        
+        menu_button.x_position=150
+        menu_button.text_size=40
+        menu_button.update()
+        menu_button.draw_button()
+
+        play_again_button.draw_button()
+        play_again_button.update()
+        quit_button.draw_button()
+        quit_button.update()
+
         if lives==0:
             with open('scoreboard.csv', mode='a', newline='') as file:
                             writer = csv.writer(file) 
                             writer.writerow([name.strip(),points])
         lives=-1
         timer_loosing= pygame.time.get_ticks()
-        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=775)
-        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=775)
-        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=25)
-        text(font='Arial',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=25)
+        text(font='courier',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=775)
+        text(font='courier',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=775)
+        text(font='courier',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=450+x_text_moving_loosing,y_position=25)
+        text(font='courier',font_size=30,text='You Lose'+' '*20+'You Lose',x_position=-450+x_text_moving_loosing,y_position=25)
         if moving_text_loosing == True:
             timer_loosing_2 = pygame.time.get_ticks()
             moving_text_loosing=False
@@ -720,17 +839,28 @@ while running:
             rainbow_moving=True
 
     if game_state=='game_won':
-        screen.fill("Black")
-        text(font_size=50,text='Nice you won!',x_position=450,y_position=450)
-        text(font_size=50,text='you have gained. '+str(points)+' points!',x_position=450,y_position=500)
-        text(font_size=50,text='If you want to play again',x_position=450,y_position=550)
-        text(font_size=50,text='press t or esc to quit the game!',x_position=450,y_position=600)
+        screen.fill('Black')
+
+
+        text(font_size=50,text='you have gained. '+str(points)+' points!',x_position=450,y_position=300)
+
+        menu_button.x_position=100
+        quit_button.x_position=800
+        play_again_button.x_position=450
+        menu_button.draw_button()
+        menu_button.update()
+        quit_button.draw_button()
+        quit_button.update()
+        play_again_button.draw_button()
+        play_again_button.update()
+
         if one_run==1:
             with open('scoreboard.csv', mode='a', newline='') as file:
                             writer = csv.writer(file) 
                             writer.writerow([name.strip(),points])
         
         one_run+=1
+    
         timer_rainbow_1 = pygame.time.get_ticks()
         if rainbow_moving:
             timer_rainbow_2= pygame.time.get_ticks()
@@ -743,6 +873,8 @@ while running:
                 color_tupel_index=0
         if timer_rainbow_1-timer_rainbow_2>10:
             rainbow_moving=True
+    
+
     if game_state=='pause':
         screen.fill("Black")
         for ball in ball_list_menu:
@@ -755,8 +887,10 @@ while running:
                     ball_list_menu.append(balls(random.randint(100,800),random.randint(100,800),10,10,random.choice([-1,1])*300,random.choice([-1,1])*300,0.6,0.8,screen,random.choice(ball_colors)))
                 ball.y_speed*=-1
             ball.draw_ball(0.005)
-        text(font_size=30,text='Points: '+str(points),x_position=450,y_position=400)
-        text(font_size=30,text='press c to continue or esc for quit',x_position=450,y_position=450)
+
+
+        button('Points: '+str(points),40,450,100,'navy','white','white').draw_button()
+       
         timer_rainbow_1 = pygame.time.get_ticks()
         if rainbow_moving:
             timer_rainbow_2= pygame.time.get_ticks()
@@ -769,6 +903,27 @@ while running:
                 color_tupel_index=0
         if timer_rainbow_1-timer_rainbow_2>10:
             rainbow_moving=True
+
+        # menu butten
+        menu_button.x_position=100
+
+        menu_button.draw_button()
+        resume_button.draw_button()
+        menu_button.update()
+        resume_button.update()
+        lose_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('Y',0),('o',10),('u',20),(' ',30),('L',40),('o',50),('s',60),('e',70)]]
+        for letters in lose_ring:
+            letters.x_position=150
+            letters.y_position=150
+            letters.show_rotating_letter()
+
+        text_rotation_timer_1 = pygame.time.get_ticks()
+        if text_rotation_aktivated:
+            text_rotation_timer_2=pygame.time.get_ticks()
+            text_rotation_aktivated=False
+            text_rotation_angle+=1
+        if text_rotation_timer_1-text_rotation_timer_2>2:
+            text_rotation_aktivated=True
     clock.tick(120)
     pygame.display.flip()
 pygame.quit()
