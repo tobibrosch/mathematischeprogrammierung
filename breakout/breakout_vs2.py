@@ -4,6 +4,7 @@ from math import sqrt
 import csv
 from rgbcsv import color_tupels
 from math import sin, cos, pi
+import numpy as np
 
 class moving_bar:
     def __init__(self, x, y,width,heigth,length,y_offset):
@@ -79,6 +80,70 @@ class button():
             return False
 
 
+def rosette(n=7/8,radius=90):
+    phi_list=np.linspace(0,50*pi*1000,num=5000)
+    x = lambda zeta :  radius*cos(n*zeta)*cos(zeta)
+    y = lambda gamma :  radius*cos(n*gamma)*sin(gamma)
+    coordiantes = []
+    for phi in phi_list:
+        coordiantes.append((int(x(phi/1000)),int(y(phi/1000))))
+    return coordiantes
+
+class firework():
+    def __init__(self,n,radius,x_position,y_position):
+        self.n=n
+        self.radius=radius
+        self.radius_increase=0
+        self.x_position = x_position
+        self.y_position = y_position
+        self.timer_1 = 0
+        self.timer_2 = 0 
+        self.firework_aktive=True
+        self.color = 'red'
+    def explode(self):
+        self.timer_1 = pygame.time.get_ticks()
+
+        if self.firework_aktive:
+            self.timer_2=pygame.time.get_ticks()
+            self.radius_increase+=20
+            self.firework_aktive=False
+        if self.radius_increase>= 400:
+            self.x_position = random.randint(100,700)
+            self.y_position = random.randint(100,700)
+            self.color=color_tupels[random.randint(0,len(color_tupels)-1)]
+            self.n = random.randint(20,40)/random.randint(20,40)
+            self.radius_increase=0
+        if self.timer_1 - self.timer_2>random.randint(1,20):
+            self.firework_aktive=True
+
+        rosette_list = [pygame.Rect(x+self.x_position ,y+self.y_position,1,1) for x,y in rosette(self.n,self.radius+self.radius_increase)]
+
+        for rosette_coordiantes in rosette_list:
+            pygame.draw.rect(screen,self.color,rosette_coordiantes)
+
+    
+class rainbow():
+    def __init__(self):
+        self.timer_1 = 0
+        self.timer_2 = 0
+        self.rainbow_moving = True
+        self.color_tupel_index=0
+    def draw_rainbow(self):
+        self.timer_1 = pygame.time.get_ticks()
+        if self.rainbow_moving:
+            self.timer_2= pygame.time.get_ticks()
+            self.color_tupel_index+=1
+            self.rainbow_moving=False
+        for snake in snake_list:
+            self.color_tupel_index+=1
+            if self.color_tupel_index>337:
+                self.color_tupel_index=0
+            pygame.draw.rect(screen,color_tupels[self.color_tupel_index],snake)
+        if self.timer_1-self.timer_2>10:
+            self.rainbow_moving=True
+    
+
+        
 
 class formation_rects():
     def __init__(self,x_tupel,y_tupel):
@@ -86,17 +151,23 @@ class formation_rects():
         self.x_tupel =x_tupel
         self.y_tupel =y_tupel
         self.selected = False
+        self.hit_counter = 1
     def get_formation_rect(self):
         return pygame.Rect(self.x_tupel*60+215,self.y_tupel*50+25,50,15)
     def draw_formation_rect(self):
         rect = pygame.Rect(self.x_tupel*60+215,self.y_tupel*50+25,50,15)
         if self.selected:
-            self.color='purple'
+            if self.hit_counter==1:
+                self.color='purple'
+            if self.hit_counter==2:
+                self.color='green'
+            if self.hit_counter==3:
+                self.color='yellow'
         elif not self.selected:
             self.color='white'
         pygame.draw.rect(screen,self.color,rect)
     def formation_tupel(self):
-        return (self.x_tupel,self.y_tupel)
+        return (self.x_tupel,self.y_tupel,self.hit_counter)
 
 class rotating_letter():
     def __init__(self,letter,starting_angle,color,radius):
@@ -209,18 +280,6 @@ def moving_rect(dt):
     for rect in rect_test_list:
         for ball in ball_list_class:
             if ball.get_ball().colliderect(rect.get_rectangle()):
-                '''
-                if rect!=floor:
-                    if rect.hit_counter==1:
-                        rect_test_list.remove(rect)  # Entferne das Rechteck aus der Liste
-                    else:
-                        rect_hit_new = rect.hit_counter-1
-                        new_rect_to_append = rect
-                        new_rect_to_append.hit_counter = rect_hit_new
-                        rect_test_list.remove(rect)
-                        rect_test_list.append(new_rect_to_append)
-                    points+=20
-                '''
                 if rect==floor:
                     timer_floor_1 = pygame.time.get_ticks()
                     change_color_floor=True
@@ -245,8 +304,22 @@ def moving_rect(dt):
                     removing_rects(rect)
                     ball.x_position_ball=rect.get_rectangle().left+ball.x_size
                     ball.x_speed *= -1
+def rotating_letters(name):
+    k=0
+    name_list = list(name)
+    new_list = []
+    for i in range(len(name_list)):
+        if name_list[i]==' ':
+            k+=12
+        else:
+            new_list.append((name_list[i],k))
+            k+=10
+    return new_list
+
+
 pygame.init()
 
+rainbow_frame = rainbow()
 
 space_bar = False
 screen = pygame.display.set_mode((900, 800))
@@ -370,16 +443,35 @@ timer_radius_aktive=True
 shrinking_radius=False
 color_tupel_index_ring=0
 #buttons
-menu_button = button('menu',40,450,450,'navy','white','white')
-resume_button = button('resume',20,550,450,'navy','white','white')
+menu_button = button('menu',40,150,450,'navy','white','white')
+resume_button = button('resume',40,450,450,'navy','white','white')
 start_button =  button('start',50,450,500,'navy','white',(255,0,200))
 safe_button =  button('safe',50,450,450,'black','white','white')
 quit_button =  button('quit',40,750,450,'navy','white','white')
 play_again_button = button('play again',40,450,450,'navy','white','white')
 #
 reset_game=False
+#rosette
+rosette_angle=0
+rosette_rotating_aktive=True
+radius_change=90
+change_sign = 1
+rosette_look = 7/8
+rosetten_color='white'
+i_rosette=0
+#firework
+firework_1=firework(7/8,0,100,100)
+firework_2=firework(3/8,0,400,800)
+firework_3=firework(1/8,0,300,300)
+#Auswahl für den Hit counter 
+chosen_hit_counter=1
+butten_1_hit=button('1 Hits',30,250,300,'purple','black','black')
+butten_2_hit=button('2 Hits',30,450,300,'green','black','black')
+butten_3_hit=button('3 Hits',30,650,300,'yellow','black','black')
+#loosing ring
+lose_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('Y',0),('o',10),('u',20),(' ',30),('L',40),('o',50),('s',60),('e',70),('Y',90),('o',100),('u',110),(' ',120),('L',130),('o',140),('s',150),('e',160),('Y',180),('o',190),('u',200),(' ',210),('L',220),('o',230),('s',240),('e',250),('Y',260),('o',270),('u',280),(' ',290),('L',300),('o',310),('s',320),('e',330)]]
 while running:
-    #print(pygame.mouse.get_pos())
+    
     pressed_keys = pygame.key.get_pressed()
     for event in pygame.event.get():
         if event.type == pygame.QUIT or pressed_keys[pygame.K_ESCAPE]:
@@ -412,12 +504,9 @@ while running:
             if mouse_location().colliderect(menu_button.get_button()):
                 reset_game=True
                 game_state='menu'
-            if mouse_location().colliderect(quit_button.get_button()):
-                running=False
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu':
             if mouse_location().colliderect(pygame.Rect(10,750,40,40)):
                 game_state='menu+settings'
-                #fehler da NOne und kein rect 
             if mouse_location().colliderect(start_button.get_button()) and not name_left:
                 shrinking_radius=True
 
@@ -429,7 +518,7 @@ while running:
                 radius_increase=0
                 shrinking_radius=False
 
-        
+
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
                 game_state='menu'
@@ -449,9 +538,16 @@ while running:
         if event.type == pygame.MOUSEBUTTONUP and game_state=='menu+settings+formation':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
                 game_state='menu+settings'
+            if mouse_location().colliderect(butten_1_hit.get_button()):
+                chosen_hit_counter=1
+            if mouse_location().colliderect(butten_2_hit.get_button()):
+                chosen_hit_counter=2
+            if mouse_location().colliderect(butten_3_hit.get_button()):
+                chosen_hit_counter=3
             for formation_rect in formation_list:
                 if mouse_location().colliderect(formation_rect.get_formation_rect()) and not formation_rect.selected and formation_rect.formation_tupel() not in seleceted_formation_list:
                     formation_rect.selected=True
+                    formation_rect.hit_counter=chosen_hit_counter
                     seleceted_formation_list.append(formation_rect.formation_tupel())
                 elif mouse_location().colliderect(formation_rect.get_formation_rect()) and formation_rect.selected and formation_rect.formation_tupel() in seleceted_formation_list:
                     formation_rect.selected=False
@@ -460,7 +556,11 @@ while running:
                 formation_safed=True
             elif mouse_location().colliderect(safe_button.get_button()) and formation_safed:
                 formation_safed=False
-    
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if mouse_location().colliderect(quit_button.get_button()) and quit_button.update():
+                running =False
+
+
     
     if reset_game:
         reset_game=False
@@ -484,6 +584,7 @@ while running:
         name_left=True
     else:   
         name_left=False 
+        
     
     if difficulty_level=='easy' and game_state=='menu+settings':
         floor_x_speed=600
@@ -500,13 +601,39 @@ while running:
         game_state='game_won'   
 
     if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
-        rect_test_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3)) for i,j in seleceted_formation_list]
+        rect_test_list=[rectangles(90,35,100*i+5,40*j+5,k) for i,j,k in seleceted_formation_list]
         rect_test_list.append(floor)
 
     if game_state=='menu':
         dt = 0.001
         screen.fill("black")
         
+        timer_rosette_1 = pygame.time.get_ticks()
+
+        if rosette_rotating_aktive:
+            timer_rosette_2 = pygame.time.get_ticks()
+            rosette_angle+=1
+            radius_change-=1*change_sign
+            i_rosette+=1
+            if i_rosette >= len(color_tupels):
+                i_rosette=0
+            rosetten_color=color_tupels[i_rosette]
+            if radius_change<0:
+                change_sign=-1
+                rosette_look = random.randint(1,20)/random.randint(1,20)
+            if radius_change>90:
+                change_sign=1
+            rosette_rotating_aktive=False
+        
+        if timer_rosette_1- timer_rosette_2> 10:
+            rosette_rotating_aktive=True
+        
+        
+        
+        rosette_list = [pygame.Rect(int(x*cos(rosette_angle/100)-y*sin(rosette_angle/100))+450,int(x*sin(rosette_angle/100)+y*cos(rosette_angle/100))+500,1,1) for x,y in rosette(n=rosette_look,radius=radius_change)]
+
+        for rosette_coordiantes in rosette_list:
+            pygame.draw.rect(screen,rosetten_color,rosette_coordiantes)
     
         
         for ball in ball_list_menu:
@@ -520,11 +647,11 @@ while running:
                 ball.y_speed*=-1
             ball.draw_ball(dt)
 
-        #mr worldwide
+        
 
     
         letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
-        #pygame.draw.circle(screen, 'white', (450,500), 100, 1)
+       
         timer_radius_1=pygame.time.get_ticks()
         for letters in letter_ring:
             letters.radius=100+radius_increase
@@ -626,19 +753,7 @@ while running:
 
         screen.blit(image_settings,(30-x/2,770-y/2))
 
-
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>338:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>1000:
-            rainbow_moving=True
+        rainbow_frame.draw_rainbow()
 
     
     if game_state=='menu+settings':
@@ -685,19 +800,9 @@ while running:
         pygame.draw.rect(screen,'white',frame_setting,5,border_radius=10)
 
         
-
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>337:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>10:
-            rainbow_moving=True
+        rainbow_frame.draw_rainbow()
+        
+    
     
         for moving_bars in moving_bars_list:
             moving_bars.update()
@@ -725,22 +830,34 @@ while running:
         
         safe_button.draw_button()
 
+        butten_1_hit.draw_button()
+        butten_1_hit.update()
+        butten_2_hit.draw_button()
+        butten_2_hit.update()
+        butten_3_hit.draw_button()
+        butten_3_hit.update()
+
+        if chosen_hit_counter==1:
+            butten_1_hit.text_color='red'
+        else:
+            butten_1_hit.text_color='black'
+
+        if chosen_hit_counter==2:
+            butten_2_hit.text_color='red'
+        else:
+            butten_2_hit.text_color='black'
+        
+        if chosen_hit_counter==3:
+            butten_3_hit.text_color='red'
+        else:
+            butten_3_hit.text_color='black'
+
+
         if safe_button.update() and seleceted_formation_list==[]:
             no_formation_text = button('no formation selected',30,450,550,'black','black','white')
             no_formation_text.draw_button()
 
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>338:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>1000:
-            rainbow_moving=True
+        rainbow_frame.draw_rainbow()
 
     if game_state=='game':      
         screen.fill("black")
@@ -793,6 +910,7 @@ while running:
              moving_text_game=True
         if x_text_moving_game>900:
              x_text_moving_game=-1
+
         
     if game_state=='game_over':
         screen.fill("Black")
@@ -825,28 +943,18 @@ while running:
              moving_text_loosing=True
         if x_text_moving_loosing>900:
              x_text_moving_loosing=-1
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>337:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>10:
-            rainbow_moving=True
+
+
+        rainbow_frame.draw_rainbow()
 
     if game_state=='game_won':
         screen.fill('Black')
 
-
-        text(font_size=50,text='you have gained. '+str(points)+' points!',x_position=450,y_position=300)
-
-        menu_button.x_position=100
-        quit_button.x_position=800
-        play_again_button.x_position=450
+        button('Points: '+str(points),40,450,100,'black','black','white').draw_button()
+        firework_1.explode()
+        firework_2.explode()
+        firework_3.explode()
+        
         menu_button.draw_button()
         menu_button.update()
         quit_button.draw_button()
@@ -860,19 +968,9 @@ while running:
                             writer.writerow([name.strip(),points])
         
         one_run+=1
+        rainbow_frame.draw_rainbow()
     
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>337:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>10:
-            rainbow_moving=True
+        
     
 
     if game_state=='pause':
@@ -891,32 +989,30 @@ while running:
 
         button('Points: '+str(points),40,450,100,'navy','white','white').draw_button()
        
-        timer_rainbow_1 = pygame.time.get_ticks()
-        if rainbow_moving:
-            timer_rainbow_2= pygame.time.get_ticks()
-            color_tupel_index+=1
-            rainbow_moving=False
-        for snake in snake_list:
-            pygame.draw.rect(screen,color_tupels[color_tupel_index],snake)
-            color_tupel_index+=1
-            if color_tupel_index>338:
-                color_tupel_index=0
-        if timer_rainbow_1-timer_rainbow_2>10:
-            rainbow_moving=True
 
         # menu butten
-        menu_button.x_position=100
-
+       
+       
+        quit_button.draw_button()
+        quit_button.update()
         menu_button.draw_button()
         resume_button.draw_button()
         menu_button.update()
         resume_button.update()
-        lose_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('Y',0),('o',10),('u',20),(' ',30),('L',40),('o',50),('s',60),('e',70)]]
-        for letters in lose_ring:
+        
+        lose_rings = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('You lose '*4)]
+
+        for letters in lose_rings:
             letters.x_position=150
             letters.y_position=150
+            letters.radius=100
             letters.show_rotating_letter()
-
+        
+        for letters in lose_ring:
+            letters.x_position=700
+            letters.y_position=600
+            letters.show_rotating_letter()
+       
         text_rotation_timer_1 = pygame.time.get_ticks()
         if text_rotation_aktivated:
             text_rotation_timer_2=pygame.time.get_ticks()
@@ -924,6 +1020,10 @@ while running:
             text_rotation_angle+=1
         if text_rotation_timer_1-text_rotation_timer_2>2:
             text_rotation_aktivated=True
+        
+        rainbow_frame.draw_rainbow()
+
+
     clock.tick(120)
     pygame.display.flip()
 pygame.quit()

@@ -1,3 +1,18 @@
-x = int(input("x="))
-if x<10 and (x<1 or x>3):
-    print(x)
+
+import numpy as np
+
+name = 'Welcome to breakout'
+k=0
+name_list = list(name)
+new_list = []
+for i in range(len(name_list)):
+    if name_list[i]==' ':
+        k+=12
+    else:
+        new_list.append((name_list[i],k))
+        k+=10
+
+
+
+    
+
