@@ -6,6 +6,7 @@ from rgbcsv import color_tupels
 from math import sin, cos, pi
 import numpy as np
 
+
 class moving_bar:
     def __init__(self, x, y,width,heigth,length,y_offset,rect_chosen):
         self.x = x
@@ -26,7 +27,7 @@ class moving_bar:
         else:
             rect=self.rect_chosen
         
-        mouse_rect = mouse_location()
+        mouse_rect = mouse_location()   
 
         if rect.colliderect(mouse_rect):
             if self.text_movingbar and self.text_movingbar_x < self.lenght:
@@ -215,13 +216,14 @@ class rotating_letter():
 
 
 class rectangles():
-    def __init__(self,x_size,y_size,x_position,y_position,hit_counter,extra_ball=False):
+    def __init__(self,x_size,y_size,x_position,y_position,hit_counter,extra_ball=False,extra_speed=False):
         self.x_size = x_size
         self.y_size = y_size
         self.x_position = x_position
         self.y_position = y_position
         self.hit_counter = hit_counter
         self.extra_ball = extra_ball
+        self.extra_speed = extra_speed
     def get_rectangle(self):
         return pygame.Rect(self.x_position,self.y_position,self.x_size,self.y_size)
     def draw_rectangles(self):
@@ -235,9 +237,17 @@ class rectangles():
         if self.hit_counter==3:
             rectangle_color="yellow"
         pygame.draw.rect(screen, rectangle_color ,rect)
+        if self.extra_ball:
+            self.extra_speed=False
         if self.y_position<400 and self.extra_ball:
             pygame.draw.circle(screen,'white',(self.x_position+self.x_size/2,self.y_position+self.y_size/2),self.y_size/5)
-
+        if self.extra_speed and not self.extra_ball and self.y_position<300:
+            text_font = pygame.font.SysFont('Arial',40)
+            text_shown = text_font.render('<<<', True, 'white')
+            text_font_width = text_shown.get_width()
+            text_font_height = text_shown.get_height()
+            screen.blit(text_shown,(self.x_position-text_font_width/2+self.x_size/2,self.y_position-text_font_height/2+self.y_size/2))
+            
 
 class balls():
     def __init__(self, x_position_ball, y_position_ball, x_size, y_size, x_speed,y_speed,dx,dy,surface,colors):
@@ -260,12 +270,14 @@ class balls():
         return pygame.Rect(self.x_position_ball, self.y_position_ball, self.x_size, self.y_size)
 
 def removing_rects(rect):
-    global points
+    global points,ballspeed_aktive
     if rect!=floor:
         if rect.hit_counter==1:
             rect_list.remove(rect)  # Entferne das Rechteck aus der Liste
             if rect.extra_ball:
-                ball_list_class.append(balls(390,300,10,10,0,700,0,1,screen,'red'))
+                ball_list_class.append(balls(390,300,10,10,0,700,0,1,screen,random.choice(ball_colors)))
+            if rect.extra_speed:
+                ballspeed_aktive=True
         else:
             rect_hit_new = rect.hit_counter-1
             new_rect_to_append = rect
@@ -337,34 +349,31 @@ def rotating_letters(name):
 
 
 pygame.init()
-
-
+#rainbowrahmen
 rainbow_frame = rainbow()
-
+#spacebar für Pause
 space_bar = False
+#dsplay
 screen = pygame.display.set_mode((900, 800))
 screen_width = screen.get_width()   
 screen_height = screen.get_height()
+#clock 
 clock = pygame.time.Clock()
 
 
-#Schrift und Bild 
-image = pygame.image.load("lose.jpeg")
+#Settingsbutton und Lebensicon
 image_settings=pygame.image.load("settings.jpeg")
 image_settings=pygame.transform.scale(image_settings, (40, 40))
 heart = "heart.gif"
 heart_surface = pygame.image.load(heart)
 heart_surface = pygame.transform.scale(heart_surface, (30, 20))
-image_width = image.get_width()
-image_height = image.get_height()
-image_x = (screen_width - image_width) // 2  
-image_y = (screen_height - image_height) // 2
-# weißer rahmen!
+# weißer rahmen im game_state=game
 frame_set = pygame.Rect(0,0,800,740)
-
+#ball speed ändern 
 ball_speed_timer_1=10000
 
 def text(font='courier',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
+   '''Funktion für einen Text'''
    text_font = pygame.font.SysFont(font,font_size)
    text_shown = text_font.render(text, True, color)
    text_font_width = text_shown.get_width()
@@ -383,43 +392,45 @@ def text(font='courier',font_size=10,text='',color=(255,255,255),x_position=0,y_
             screen.blit(text_shown,(x_position,y_position))
 
 def mouse_location():
+    '''Returns the location of the Mouse as a Rect by 1x1 Pixel'''
     mouse_x_pos,mouse_y_pos=pygame.mouse.get_pos()
     return pygame.Rect(mouse_x_pos,mouse_y_pos,1,1)
 
 
 
-#scoreboard 
-
+#scoreboard lesen mit a um beim wiederöffnen nicht überschrieben wird und falls keine file existiert eine erstellt wird
 with open('scoreboard.csv', mode='a', newline='') as file:
    writer = csv.writer(file) 
 
-#rechtecke
 
+#floor
 floor = rectangles(100,10,350,700,0)
-rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
-rect_list.append(floor)
-
+#True False liste
+true_false_list = [False]*7+[True]*3
+#formation
 formation_1 = [(3,0),(4,0),(1,1),(2,1),(5,1),(6,1),(0,2),(1,2),(2,2),(5,2),(6,2),(7,2),(1,3),(2,3),(3,3),(4,3),(5,3),(6,3)]
-rect_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3),random.choice([True,False])) for i,j in formation_1 ]
+rect_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3),random.choice(true_false_list),random.choice(true_false_list)) for i,j in formation_1 ]
 rect_list.append(floor)
 
-
+#formation list in selected mode
 formation_list = [formation_rects(x,y) for x in range(8) for y in range(5)]
 seleceted_formation_list=[]
 formation_safed=False
 
-points=0
-timer_floor_1=1
-lives=3
-one_run = 1 
-name=""
+#allgemeine Variablen
+points=0 #Punkte
+timer_floor_1=1 #Farbänderung
+change_color_floor=False
+lives=3 #Leben 
+one_run = 1 #one_run damit der name nur einmal ins Scoreboard gespeichert wird 
+name="" 
 name_left=True
 difficulty_level='easy'
 floor_x_speed=600
 running = True
 moving_text_menu=True
 moving_text_game=True
-change_color_floor=False
+#Für die regenbogen Farbenschrift
 color_red=252
 color_green=0
 color_blue=0
@@ -438,7 +449,7 @@ ball_colors = ["Red", "Blue", "Green", "Yellow", "Orange", "Purple", "White", "P
 
 ball_list_class = [ball_1]
 ball_list_menu = [ball_3]
-
+#gamestate menu anfang
 game_state='menu'
 
 text_movingbar=True
@@ -446,16 +457,10 @@ text_movingbar_x=0
 text_movingbar_x_2=0
 color_tupel_index =0
 color_tupel_index_start =0
+#Rahmenliste der Rechteke
 snake_list = [pygame.Rect(i*10,0,10,10) for i in range(90)] + [pygame.Rect(890,10+i*10,10,10) for i in range(79)]+[pygame.Rect(890-i*10,790,10,10) for i in range(89)]+[pygame.Rect(0,790-i*10,10,10) for i in range(79)]
-rainbow_moving = True
 
-moving_bar_1 = moving_bar(310,111,90,34,80,40,None)
-moving_bar_2 = moving_bar(480,111,138,34,138,40,None)
-moving_bar_3 = moving_bar(713,111,75,34,75,40,None)
-moving_bar_4 = moving_bar(42,408,290,34,290,40,None)
-moving_bar_5 = moving_bar(42,508,290,34,278,40,None)
-moving_bars_list=[moving_bar_1,moving_bar_2,moving_bar_3,moving_bar_4,moving_bar_5]
-#roation
+#rotation des Text
 text_rotation_aktivated=True
 text_rotation_angle=0
 radius_aktive=False
@@ -480,7 +485,7 @@ reset_button=button('reset scoreboard',40,450,450,'black','white','white')
 reset_moving_bar = moving_bar(450,450,-200,-25,100,20,None)
 select_button=button('select formation',40,450,550,'black','white','white')
 selectet_moving_bar = moving_bar(450,550,-200,-25,100,20,None)
-#
+#rest 
 reset_game=False
 #rosette    
 rosette_angle=0
@@ -507,6 +512,7 @@ butterfly=rosette(n=1/2,radius=300)
 #ballspeed 
 ballspeed_aktive=False
 dt = 0.005
+ball_speed_reset=False
 while running:
     
     pressed_keys = pygame.key.get_pressed()
@@ -527,14 +533,13 @@ while running:
                 game_state='pause'
             if event.key == pygame.K_t and (game_state=='game_over' or game_state=='game_won'):
                 ball_list_class = [ball_1]
-                rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+                rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3),True) for i in range(8) for j in range(5)]
                 rect_list.append(floor)
                 floor.x_position=350
                 points=0
                 lives=4
                 game_state='game'
-            if event.key == pygame.K_t and game_state=='game':
-                ballspeed_aktive=True
+           
         
         if event.type == pygame.MOUSEBUTTONDOWN and (game_state=='game_over' or game_state=='game_won'):
             if mouse_location().colliderect(play_again_button.get_button()):
@@ -603,9 +608,9 @@ while running:
     
     if reset_game:
         reset_game=False
-        ball_1 =  balls(390,300,10,10,0,700,0,1,screen,'red')
+        ball_1 =  balls(390,300,10,10,0,700,0,1,screen,random.choice(ball_colors))
         ball_list_class = [ball_1]
-        rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+        rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3),random.choice(true_false_list),random.choice(true_false_list)) for i in range(8) for j in range(5)]
         rect_list.append(floor)
         floor.x_position=350
         points=0
@@ -693,7 +698,7 @@ while running:
 
     
         letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
-       
+        
         timer_radius_1=pygame.time.get_ticks()
         for letters in letter_ring:
             letters.radius=100+radius_increase
@@ -875,19 +880,9 @@ while running:
        
         if mouse_location().colliderect(hard_button.get_button()):
             text(font_size=30,text='floorsize = 25 px and floorspeed = 400',x_position=450,y_position=300,centering=True,color=(255,0,100))
-
-
-      
-
-        
         
         rainbow_frame.draw_rainbow()
-        
     
-        
-    
-
-
     if game_state=='menu+settings+formation':
         screen.fill("black")
         if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
@@ -955,7 +950,7 @@ while running:
 
         timer_floor_2 = pygame.time.get_ticks()
 
-
+        #game interaktion
         moving_rect(dt)
 
 
@@ -965,13 +960,26 @@ while running:
              change_color_floor=False
              floor.hit_counter=0
 
+
         if ballspeed_aktive:
             ballspeed_aktive=False
+            ball_speed_reset=True
             ball_speed_timer_1=pygame.time.get_ticks()
             dt=0.007
+            for ball in ball_list_class:
+                ball.x_speed*=1.1
+                ball.y_speed*=1.1
+        
         ball_speed_timer_2 = pygame.time.get_ticks()
         if ball_speed_timer_2-ball_speed_timer_1>1000:
             dt=0.005
+            if ball_speed_reset:
+                ball_speed_reset=False
+                for ball in ball_list_class:
+                    ball.x_speed*=1/1.1
+                    ball.y_speed*=1/1.1
+
+
         #Leben
         for i in range(lives):
             screen.blit(heart_surface,(800+i*33,40))
@@ -1122,9 +1130,7 @@ while running:
             text_rotation_angle+=1
         if text_rotation_timer_1-text_rotation_timer_2>2:
             text_rotation_aktivated=True
-        
         rainbow_frame.draw_rainbow()
-
     clock.tick(120)
     pygame.display.flip()
 pygame.quit()
