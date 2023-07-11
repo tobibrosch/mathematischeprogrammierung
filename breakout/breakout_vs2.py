@@ -7,7 +7,7 @@ from math import sin, cos, pi
 import numpy as np
 
 class moving_bar:
-    def __init__(self, x, y,width,heigth,length,y_offset):
+    def __init__(self, x, y,width,heigth,length,y_offset,rect_chosen):
         self.x = x
         self.y = y
         self.lenght = length
@@ -18,10 +18,14 @@ class moving_bar:
         self.text_movingbar = False
         self.timer_1 = 0
         self.timer_2 = 0
-    
+        self.rect_chosen=rect_chosen
     def update(self):
         self.timer_2 = pygame.time.get_ticks()
-        rect=pygame.Rect(self.x,self.y,self.widht,self.height)
+        if self.rect_chosen == None:
+            rect=pygame.Rect(self.x,self.y,self.widht,self.height)
+        else:
+            rect=self.rect_chosen
+        
         mouse_rect = mouse_location()
 
         if rect.colliderect(mouse_rect):
@@ -32,18 +36,18 @@ class moving_bar:
             if self.timer_2 - self.timer_1 > 0.01  and not self.text_movingbar:
                 self.text_movingbar = True
                 self.text_movingbar_x += 8
-            
+        elif self.rect_chosen !=None:
+            self.text_movingbar_x=0
         else:
             if self.text_movingbar and self.text_movingbar_x > 0:
                 self.timer_1 = pygame.time.get_ticks()
                 self.text_movingbar = False
                 
-
             if self.timer_2 - self.timer_1 > 0.01 and not self.text_movingbar and self.text_movingbar_x>0:
                 self.text_movingbar = True
                 self.text_movingbar_x -= 8
 
-        pygame.draw.rect(screen,'white',pygame.Rect(self.x,self.y+self.y_offset,self.text_movingbar_x,5),border_radius=5)        
+        pygame.draw.rect(screen,'white',pygame.Rect(self.x-self.lenght/2,self.y+self.y_offset,self.text_movingbar_x,5),border_radius=5)        
 
 class button():
     def __init__(self,text,text_size,x_position,y_position,inner_color,frame_color,text_color):
@@ -57,10 +61,12 @@ class button():
         self.new_size = text_size
         self.new_frame_color = frame_color
         self.button_frame = pygame.Rect(0,0,0,0)
+        self.text_width = 0
     def draw_button(self): 
         text_font = pygame.font.SysFont('courier',self.text_size)
         text_shown = text_font.render(self.text, True, self.text_color)
         text_width = text_shown.get_width()
+        self.text_width=text_shown.get_width()
         text_height = text_shown.get_height()
         inner_button = pygame.Rect(self.x_position-text_width/2-5,self.y_position-text_height/2-5,10+text_width,10+text_height)
         self.button_frame= pygame.Rect(self.x_position-text_width/2-10,self.y_position-text_height/2-10,20+text_width,20+text_height)
@@ -78,6 +84,12 @@ class button():
             self.frame_color=self.new_frame_color
             self.text_size=self.new_size-5
             return False
+    def update_aktive(self):
+        if mouse_location().colliderect(self.button_frame):
+            return True
+        else:
+            return False
+
 
 
 def rosette(n=7/8,radius=90):
@@ -107,11 +119,13 @@ class firework():
             self.timer_2=pygame.time.get_ticks()
             self.radius_increase+=20
             self.firework_aktive=False
-        if self.radius_increase>= 400:
+        if self.radius_increase>= random.randint(400,500):
             self.x_position = random.randint(100,700)
             self.y_position = random.randint(100,700)
             self.color=color_tupels[random.randint(0,len(color_tupels)-1)]
             self.n = random.randint(20,40)/random.randint(20,40)
+            while self.n ==1:
+                self.n = random.randint(20,40)/random.randint(20,40)
             self.radius_increase=0
         if self.timer_1 - self.timer_2>random.randint(1,20):
             self.firework_aktive=True
@@ -201,12 +215,13 @@ class rotating_letter():
 
 
 class rectangles():
-    def __init__(self,x_size,y_size,x_position,y_position,hit_counter):
+    def __init__(self,x_size,y_size,x_position,y_position,hit_counter,extra_ball=False):
         self.x_size = x_size
         self.y_size = y_size
         self.x_position = x_position
         self.y_position = y_position
         self.hit_counter = hit_counter
+        self.extra_ball = extra_ball
     def get_rectangle(self):
         return pygame.Rect(self.x_position,self.y_position,self.x_size,self.y_size)
     def draw_rectangles(self):
@@ -220,6 +235,8 @@ class rectangles():
         if self.hit_counter==3:
             rectangle_color="yellow"
         pygame.draw.rect(screen, rectangle_color ,rect)
+        if self.y_position<400 and self.extra_ball:
+            pygame.draw.circle(screen,'white',(self.x_position+self.x_size/2,self.y_position+self.y_size/2),self.y_size/5)
 
 
 class balls():
@@ -246,27 +263,29 @@ def removing_rects(rect):
     global points
     if rect!=floor:
         if rect.hit_counter==1:
-            rect_test_list.remove(rect)  # Entferne das Rechteck aus der Liste
+            rect_list.remove(rect)  # Entferne das Rechteck aus der Liste
+            if rect.extra_ball:
+                ball_list_class.append(balls(390,300,10,10,0,700,0,1,screen,'red'))
         else:
             rect_hit_new = rect.hit_counter-1
             new_rect_to_append = rect
             new_rect_to_append.hit_counter = rect_hit_new
-            rect_test_list.remove(rect)
-            rect_test_list.append(new_rect_to_append)
+            rect_list.remove(rect)
+            rect_list.append(new_rect_to_append)
         points+=20
 
 def moving_rect(dt):
-    global lives, points, rect_test_list, ball_list_class,timer_floor_1,change_color_floor, game_state
+    global lives, points, rect_list, ball_list_class,timer_floor_1,change_color_floor, game_state
     for ball in ball_list_class:
         if ball.get_ball().top < 0:
             ball.y_position_ball=0
             ball.y_speed*= -1
         if ball.get_ball().bottom > 710:
             ball_list_class.remove(ball)
-            floor.x_position=350
             if ball_list_class==[]:
                 ball_list_class.append(balls(400,400,10,10,0,ball.y_speed,0,1,screen,random.choice(ball_colors)))
                 lives-=1
+                floor.x_position=350
                 if lives<=0:
                      game_state='game_over'
         elif ball.get_ball().left < 0 or ball.get_ball().right > 800:
@@ -276,8 +295,8 @@ def moving_rect(dt):
             if ball.get_ball().right >800:
                 ball.x_position_ball=790
         ball.draw_ball(dt)
-    hitbox = 10
-    for rect in rect_test_list:
+    hitbox = 5
+    for rect in rect_list:
         for ball in ball_list_class:
             if ball.get_ball().colliderect(rect.get_rectangle()):
                 if rect==floor:
@@ -319,6 +338,7 @@ def rotating_letters(name):
 
 pygame.init()
 
+
 rainbow_frame = rainbow()
 
 space_bar = False
@@ -342,6 +362,7 @@ image_y = (screen_height - image_height) // 2
 # weißer rahmen!
 frame_set = pygame.Rect(0,0,800,740)
 
+ball_speed_timer_1=10000
 
 def text(font='courier',font_size=10,text='',color=(255,255,255),x_position=0,y_position=0,centering=True,scale=False,scale_x=100,scale_y=100):
    text_font = pygame.font.SysFont(font,font_size)
@@ -375,12 +396,12 @@ with open('scoreboard.csv', mode='a', newline='') as file:
 #rechtecke
 
 floor = rectangles(100,10,350,700,0)
-rect_test_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
-rect_test_list.append(floor)
+rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+rect_list.append(floor)
 
 formation_1 = [(3,0),(4,0),(1,1),(2,1),(5,1),(6,1),(0,2),(1,2),(2,2),(5,2),(6,2),(7,2),(1,3),(2,3),(3,3),(4,3),(5,3),(6,3)]
-rect_test_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3)) for i,j in formation_1 ]
-rect_test_list.append(floor)
+rect_list=[rectangles(90,35,100*i+5,40*j+5,random.randint(1,3),random.choice([True,False])) for i,j in formation_1 ]
+rect_list.append(floor)
 
 
 formation_list = [formation_rects(x,y) for x in range(8) for y in range(5)]
@@ -428,11 +449,11 @@ color_tupel_index_start =0
 snake_list = [pygame.Rect(i*10,0,10,10) for i in range(90)] + [pygame.Rect(890,10+i*10,10,10) for i in range(79)]+[pygame.Rect(890-i*10,790,10,10) for i in range(89)]+[pygame.Rect(0,790-i*10,10,10) for i in range(79)]
 rainbow_moving = True
 
-moving_bar_1 = moving_bar(310,111,90,34,80,40)
-moving_bar_2 = moving_bar(480,111,138,34,138,40)
-moving_bar_3 = moving_bar(713,111,75,34,75,40)
-moving_bar_4 = moving_bar(42,408,290,34,290,40)
-moving_bar_5 = moving_bar(42,508,290,34,278,40)
+moving_bar_1 = moving_bar(310,111,90,34,80,40,None)
+moving_bar_2 = moving_bar(480,111,138,34,138,40,None)
+moving_bar_3 = moving_bar(713,111,75,34,75,40,None)
+moving_bar_4 = moving_bar(42,408,290,34,290,40,None)
+moving_bar_5 = moving_bar(42,508,290,34,278,40,None)
 moving_bars_list=[moving_bar_1,moving_bar_2,moving_bar_3,moving_bar_4,moving_bar_5]
 #roation
 text_rotation_aktivated=True
@@ -445,13 +466,23 @@ color_tupel_index_ring=0
 #buttons
 menu_button = button('menu',40,150,450,'navy','white','white')
 resume_button = button('resume',40,450,450,'navy','white','white')
-start_button =  button('start',50,450,500,'navy','white',(255,0,200))
+start_button =  button('start',50,450,500,'navy','white',(255,0,100))
 safe_button =  button('safe',50,450,450,'black','white','white')
 quit_button =  button('quit',40,750,450,'navy','white','white')
 play_again_button = button('play again',40,450,450,'navy','white','white')
+easy_button=button('easy',40,150,200,'black','white','white')
+easy_moving_bar = moving_bar(150,200,-200,-25,100,20,None)
+medium_button=button('medium',40,450,200,'black','white','white')
+medium_moving_bar = moving_bar(450,200,-200,-25,100,20,None)   
+hard_button=button('hard',40,750,200,'black','white','white')
+hard_moving_bar = moving_bar(750,200,-200,-25,100,20,None)
+reset_button=button('reset scoreboard',40,450,450,'black','white','white')
+reset_moving_bar = moving_bar(450,450,-200,-25,100,20,None)
+select_button=button('select formation',40,450,550,'black','white','white')
+selectet_moving_bar = moving_bar(450,550,-200,-25,100,20,None)
 #
 reset_game=False
-#rosette
+#rosette    
 rosette_angle=0
 rosette_rotating_aktive=True
 radius_change=90
@@ -470,6 +501,12 @@ butten_2_hit=button('2 Hits',30,450,300,'green','black','black')
 butten_3_hit=button('3 Hits',30,650,300,'yellow','black','black')
 #loosing ring
 lose_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('Y',0),('o',10),('u',20),(' ',30),('L',40),('o',50),('s',60),('e',70),('Y',90),('o',100),('u',110),(' ',120),('L',130),('o',140),('s',150),('e',160),('Y',180),('o',190),('u',200),(' ',210),('L',220),('o',230),('s',240),('e',250),('Y',260),('o',270),('u',280),(' ',290),('L',300),('o',310),('s',320),('e',330)]]
+ring_moving_aktive=True
+alpha=0
+butterfly=rosette(n=1/2,radius=300)
+#ballspeed 
+ballspeed_aktive=False
+dt = 0.005
 while running:
     
     pressed_keys = pygame.key.get_pressed()
@@ -490,12 +527,14 @@ while running:
                 game_state='pause'
             if event.key == pygame.K_t and (game_state=='game_over' or game_state=='game_won'):
                 ball_list_class = [ball_1]
-                rect_test_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
-                rect_test_list.append(floor)
+                rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+                rect_list.append(floor)
                 floor.x_position=350
                 points=0
                 lives=4
                 game_state='game'
+            if event.key == pygame.K_t and game_state=='game':
+                ballspeed_aktive=True
         
         if event.type == pygame.MOUSEBUTTONDOWN and (game_state=='game_over' or game_state=='game_won'):
             if mouse_location().colliderect(play_again_button.get_button()):
@@ -522,16 +561,16 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
             if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
                 game_state='menu'
-            if mouse_location().colliderect(pygame.Rect(300,100,130,40)):
+            if mouse_location().colliderect(easy_button.get_button()):
                 difficulty_level='easy'
-            if mouse_location().colliderect(pygame.Rect(480,100,150,40)):
+            if mouse_location().colliderect(medium_button.get_button()):
                 difficulty_level='medium'
-            if mouse_location().colliderect(pygame.Rect(700,100,100,40)):
+            if mouse_location().colliderect(hard_button.get_button()):
                 difficulty_level='hard'
-            if mouse_location().colliderect(pygame.Rect(40,500,278,40)):
+            if mouse_location().colliderect(select_button.get_button()):
                 game_state='menu+settings+formation'
         if event.type == pygame.MOUSEBUTTONUP and game_state=='menu+settings':
-             if mouse_location().colliderect(pygame.Rect(40,400,300,40)):
+             if mouse_location().colliderect(reset_button.get_button()):
                 with open('scoreboard.csv', mode='w', newline='') as file:
                     writer = csv.writer(file) 
 
@@ -557,7 +596,7 @@ while running:
             elif mouse_location().colliderect(safe_button.get_button()) and formation_safed:
                 formation_safed=False
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if mouse_location().colliderect(quit_button.get_button()) and quit_button.update():
+            if mouse_location().colliderect(quit_button.get_button()) and quit_button.update_aktive():
                 running =False
 
 
@@ -566,8 +605,8 @@ while running:
         reset_game=False
         ball_1 =  balls(390,300,10,10,0,700,0,1,screen,'red')
         ball_list_class = [ball_1]
-        rect_test_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
-        rect_test_list.append(floor)
+        rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3)) for i in range(8) for j in range(5)]
+        rect_list.append(floor)
         floor.x_position=350
         points=0
         lives=4
@@ -597,15 +636,16 @@ while running:
         floor.x_size=25
     
     
-    if lives >0 and rect_test_list==[floor]:
+    if lives >0 and rect_list==[floor]:
         game_state='game_won'   
 
     if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
-        rect_test_list=[rectangles(90,35,100*i+5,40*j+5,k) for i,j,k in seleceted_formation_list]
-        rect_test_list.append(floor)
+        rect_list=[rectangles(90,35,100*i+5,40*j+5,k) for i,j,k in seleceted_formation_list]
+        rect_list.append(floor)
+
 
     if game_state=='menu':
-        dt = 0.001
+        dt = 0.005
         screen.fill("black")
         
         timer_rosette_1 = pygame.time.get_ticks()
@@ -621,6 +661,8 @@ while running:
             if radius_change<0:
                 change_sign=-1
                 rosette_look = random.randint(1,20)/random.randint(1,20)
+                while rosette_look==1:
+                    rosette_look = random.randint(1,20)/random.randint(1,20)
             if radius_change>90:
                 change_sign=1
             rosette_rotating_aktive=False
@@ -683,14 +725,6 @@ while running:
         if text_rotation_timer_1-text_rotation_timer_2>2:
             text_rotation_aktivated=True
        
-        #new lines 
-        
-        
-
-        
-        
-
-        #new
         timer_1 = pygame.time.get_ticks()
         text(font='courier',font_size=50,text='Welcome to Breakout',x_position=450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
         text(font='courier',font_size=50,text='Welcome to Breakout',x_position=-450+x_text_moving_menu,y_position=60,color=(color_red,color_green,color_blue))
@@ -718,7 +752,8 @@ while running:
              moving_text_menu=True
         if x_text_moving_menu>900:
              x_text_moving_menu=-1
-        text(font_size=20,text='enter name',x_position=450,y_position=250)
+        if name.strip()=='':
+            text(font_size=20,text='enter name',x_position=450,y_position=250)
         rectangles(400,5,250,350,0).draw_rectangles()
 
         text(font_size=50,text=name.strip(),x_position=450,y_position=300,centering=True,color=(255,0,200))
@@ -743,14 +778,14 @@ while running:
             else:
                 start_button.text='resume'
             start_button.draw_button()
-            if start_button.update() and not shrinking_radius:   
+            if start_button.update_aktive() and not shrinking_radius:   
                 radius_aktive=True
-            elif not start_button.update() and not shrinking_radius:
+            elif not start_button.update_aktive() and not shrinking_radius:
                 radius_aktive=False
-            
+            start_button.update()
 
         
-
+        
         screen.blit(image_settings,(30-x/2,770-y/2))
 
         rainbow_frame.draw_rainbow()
@@ -759,57 +794,98 @@ while running:
     if game_state=='menu+settings':
         screen.fill("black")
 
-        text(font_size=50,text='settings',x_position=450,y_position=40)
+        
+        button('Settings',50,450,60,'black','white','white').draw_button()
+
         if mouse_location().colliderect(pygame.Rect(730,745,100,30)):
             text(font_size=40,text='menu',x_position=780,y_position=760)
         else:
-            text(font_size=30,text='menu',x_position=780,y_position=760)
+            text(font_size=30,text='menu',x_position=780,y_position=760)        
+
         
-        if mouse_location().colliderect(pygame.Rect(40,400,300,40)):
-            text(font_size=40,text='reset scoreboard',x_position=40,y_position=400,centering=False,color=(255,0,200))
+        easy_button.draw_button()
+        easy_button.update()
+        if easy_button.update_aktive() or difficulty_level=='easy':
+            easy_button.text_color=(255,0,100)
+            easy_button.frame_color='white'
+            if easy_button.update_aktive() or not difficulty_level=='easy':
+                easy_button.frame_color='black'
         else:
-            text(font_size=40,text='reset scoreboard',x_position=40,y_position=400,centering=False)
-        if mouse_location().colliderect(pygame.Rect(40,500,278,40)):
-            text(font_size=40,text='select formation',x_position=40,y_position=500,centering=False,color=(255,0,200))
-        else:
-            text(font_size=40,text='select formation',x_position=40,y_position=500,centering=False)
+            easy_button.text_color='white'
+        easy_moving_bar.lenght=easy_button.text_width
+        easy_moving_bar.rect_chosen=easy_button.get_button()
+        easy_moving_bar.update()
 
 
-        text(font_size=40,text='difficulty level:',x_position=40,y_position=100,centering=False)
-
-        if mouse_location().colliderect(pygame.Rect(300,100,130,40)) or difficulty_level=='easy':
-            text(font_size=40,text='easy',x_position=350,y_position=120,centering=True,color=(255,0,100))
-            if mouse_location().colliderect(pygame.Rect(300,100,130,40)):
-                text(font_size=30,text='floorsize = 100 px and floorspeed = 600',x_position=450,y_position=300,centering=True,color=(255,0,100))
+        medium_button.draw_button()
+        medium_button.update()
+        if medium_button.update_aktive() or difficulty_level=='medium':
+            medium_button.text_color=(255,0,100)
+            medium_button.frame_color='white'
+            if medium_button.update_aktive() or not difficulty_level=='medium':
+                medium_button.frame_color='black'
         else:
-            text(font_size=40,text='easy',x_position=350,y_position=120,centering=True)
+            medium_button.text_color='white'
+        medium_moving_bar.lenght=medium_button.text_width
+        medium_moving_bar.rect_chosen=medium_button.get_button()
+        medium_moving_bar.update()
+        
 
-        if mouse_location().colliderect(pygame.Rect(480,100,150,40)) or difficulty_level=='medium':
-            text(font_size=40,text='medium',x_position=550,y_position=120,centering=True,color=(255,0,100))
-            if mouse_location().colliderect(pygame.Rect(480,100,150,40)):
-                text(font_size=30,text='floorsize = 50 px and floorspeed = 500',x_position=450,y_position=300,centering=True,color=(255,0,100))
+        hard_button.draw_button()
+        hard_button.update()
+        if hard_button.update_aktive() or difficulty_level=='hard':
+            hard_button.text_color=(255,0,100)
+            hard_button.frame_color='white'
+            if hard_button.update_aktive() or not difficulty_level=='hard':
+                hard_button.frame_color='black'
         else:
-            text(font_size=40,text='medium',x_position=550,y_position=120,centering=True)
-        if mouse_location().colliderect(pygame.Rect(700,100,150,40)) or difficulty_level=='hard':
-             text(font_size=40,text='hard',x_position=750,y_position=120,centering=True,color=(255,0,100))
-             if mouse_location().colliderect(pygame.Rect(700,100,150,40)):
-                text(font_size=30,text='floorsize = 25 px and floorspeed = 400',x_position=450,y_position=300,centering=True,color=(255,0,100))
-        else:
-             text(font_size=40,text='hard',x_position=750,y_position=120,centering=True)
-        frame_setting= pygame.Rect(0,0,900,800)
-        pygame.draw.rect(screen,'white',frame_setting,5,border_radius=10)
+            hard_button.text_color='white'
+        hard_moving_bar.lenght=hard_button.text_width
+        hard_moving_bar.rect_chosen=hard_button.get_button()
+        hard_moving_bar.update()
 
+        select_button.draw_button()
+        select_button.update()
+        if select_button.update_aktive():
+           select_button.text_color=(255,0,100)
+           select_button.frame_color='black'
+        else:
+           select_button.text_color='white'
+        selectet_moving_bar.lenght=select_button.text_width
+        selectet_moving_bar.rect_chosen=select_button.get_button()
+        selectet_moving_bar.update()
+
+
+        reset_button.draw_button()
+        reset_button.update()
+        if reset_button.update_aktive():
+            reset_button.text_color=(255,0,100)
+            reset_button.frame_color='black'
+        else:
+            reset_button.text_color='white'
+        reset_moving_bar.lenght=reset_button.text_width
+        reset_moving_bar.rect_chosen=reset_button.get_button()
+        reset_moving_bar.update()
+
+        if mouse_location().colliderect(easy_button.get_button()):
+            text(font_size=30,text='floorsize = 100 px and floorspeed = 600',x_position=450,y_position=300,centering=True,color=(255,0,100))
+        
+        if mouse_location().colliderect(medium_button.get_button()):
+            text(font_size=30,text='floorsize = 50 px and floorspeed = 500',x_position=450,y_position=300,centering=True,color=(255,0,100))
+       
+        if mouse_location().colliderect(hard_button.get_button()):
+            text(font_size=30,text='floorsize = 25 px and floorspeed = 400',x_position=450,y_position=300,centering=True,color=(255,0,100))
+
+
+      
+
+        
         
         rainbow_frame.draw_rainbow()
         
     
+        
     
-        for moving_bars in moving_bars_list:
-            moving_bars.update()
-
-    if not game_state=='menu+settings':
-        for moving_bars in moving_bars_list:
-            moving_bars.text_movingbar_x=0
 
 
     if game_state=='menu+settings+formation':
@@ -826,9 +902,12 @@ while running:
         else:
             safe_button.text='safe'
             safe_button.text_color='white'
+            
 
+        safe_button.update()
         
         safe_button.draw_button()
+        
 
         butten_1_hit.draw_button()
         butten_1_hit.update()
@@ -853,7 +932,7 @@ while running:
             butten_3_hit.text_color='black'
 
 
-        if safe_button.update() and seleceted_formation_list==[]:
+        if safe_button.update_aktive() and seleceted_formation_list==[]:
             no_formation_text = button('no formation selected',30,450,550,'black','black','white')
             no_formation_text.draw_button()
 
@@ -862,7 +941,7 @@ while running:
     if game_state=='game':      
         screen.fill("black")
         pygame.draw.rect(screen,"white",frame_set,5)
-        dt = 0.005
+        
         if pressed_keys[pygame.K_a] and floor.get_rectangle().left > 0:
             floor.x_position  -= floor_x_speed * dt
         if floor.get_rectangle().left<0:
@@ -871,18 +950,28 @@ while running:
             floor.x_position += floor_x_speed * dt
         if floor.get_rectangle().right>800:
                 floor.x_position=800-floor.x_size
-        for brick in rect_test_list:
+        for brick in rect_list:
              brick.draw_rectangles()
 
         timer_floor_2 = pygame.time.get_ticks()
+
+
         moving_rect(dt)
+
+
         if change_color_floor==True:
              floor.hit_counter=1
         if timer_floor_2-timer_floor_1>200:
              change_color_floor=False
              floor.hit_counter=0
 
-
+        if ballspeed_aktive:
+            ballspeed_aktive=False
+            ball_speed_timer_1=pygame.time.get_ticks()
+            dt=0.007
+        ball_speed_timer_2 = pygame.time.get_ticks()
+        if ball_speed_timer_2-ball_speed_timer_1>1000:
+            dt=0.005
         #Leben
         for i in range(lives):
             screen.blit(heart_surface,(800+i*33,40))
@@ -915,8 +1004,7 @@ while running:
     if game_state=='game_over':
         screen.fill("Black")
         
-        menu_button.x_position=150
-        menu_button.text_size=40
+        
         menu_button.update()
         menu_button.draw_button()
 
@@ -1000,19 +1088,33 @@ while running:
         menu_button.update()
         resume_button.update()
         
-        lose_rings = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('You lose '*4)]
+        lose_rings = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Pause '*6)]
+        welcom_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Breakout '*4)]
+
+        
+        timer_ring_1 = pygame.time.get_ticks()
+        if ring_moving_aktive: 
+            ring_moving_aktive=False
+            alpha+=1
+            if alpha>=len(rosette(n=3)):
+                alpha=0
+            timer_ring_2 = pygame.time.get_ticks()
+        
+        if timer_ring_1-timer_ring_2>30:
+            ring_moving_aktive=True
+        
 
         for letters in lose_rings:
-            letters.x_position=150
-            letters.y_position=150
-            letters.radius=100
+            letters.x_position=450+300*cos(alpha/100)
+            letters.y_position=450+300*sin(alpha/100)
+            letters.show_rotating_letter()
+
+
+        for letters in welcom_ring:
+            letters.x_position=450+butterfly[alpha][0]
+            letters.y_position=450+butterfly[alpha][1]
             letters.show_rotating_letter()
         
-        for letters in lose_ring:
-            letters.x_position=700
-            letters.y_position=600
-            letters.show_rotating_letter()
-       
         text_rotation_timer_1 = pygame.time.get_ticks()
         if text_rotation_aktivated:
             text_rotation_timer_2=pygame.time.get_ticks()
@@ -1022,7 +1124,6 @@ while running:
             text_rotation_aktivated=True
         
         rainbow_frame.draw_rainbow()
-
 
     clock.tick(120)
     pygame.display.flip()
