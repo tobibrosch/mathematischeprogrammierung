@@ -26,7 +26,6 @@ class moving_bar:
             rect=pygame.Rect(self.x,self.y,self.widht,self.height)
         else:
             rect=self.rect_chosen
-        
         mouse_rect = mouse_location()   
 
         if rect.colliderect(mouse_rect):
@@ -269,7 +268,7 @@ class balls():
     def get_ball(self):
         return pygame.Rect(self.x_position_ball, self.y_position_ball, self.x_size, self.y_size)
 
-def removing_rects(rect):
+def removing_rects(rect=rectangles(0,0,0,0,0,0)):
     global points,ballspeed_aktive
     if rect!=floor:
         if rect.hit_counter==1:
@@ -513,6 +512,12 @@ butterfly=rosette(n=1/2,radius=300)
 ballspeed_aktive=False
 dt = 0.005
 ball_speed_reset=False
+#Letter rings
+letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
+lose_rings = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Pause '*6)]
+welcom_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Breakout '*4)]
+#rosette ring 
+rosette_list = [pygame.Rect(int(x*cos(rosette_angle/100)-y*sin(rosette_angle/100))+450,int(x*sin(rosette_angle/100)+y*cos(rosette_angle/100))+500,1,1) for x,y in rosette(n=rosette_look,radius=radius_change)]
 while running:
     
     pressed_keys = pygame.key.get_pressed()
@@ -531,14 +536,7 @@ while running:
             if event.key == pygame.K_SPACE and game_state=='game':
                 ball_list_menu=[ball_3]
                 game_state='pause'
-            if event.key == pygame.K_t and (game_state=='game_over' or game_state=='game_won'):
-                ball_list_class = [ball_1]
-                rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3),True) for i in range(8) for j in range(5)]
-                rect_list.append(floor)
-                floor.x_position=350
-                points=0
-                lives=4
-                game_state='game'
+            
            
         
         if event.type == pygame.MOUSEBUTTONDOWN and (game_state=='game_over' or game_state=='game_won'):
@@ -610,11 +608,12 @@ while running:
         reset_game=False
         ball_1 =  balls(390,300,10,10,0,700,0,1,screen,random.choice(ball_colors))
         ball_list_class = [ball_1]
-        rect_list = [rectangles(90,35,i*100+5,j*40+5,random.randint(1,3),random.choice(true_false_list),random.choice(true_false_list)) for i in range(8) for j in range(5)]
+        rect_list = [rectangles(90,35,100*i+5,40*j+5,random.randint(1,3),random.choice(true_false_list),random.choice(true_false_list)) for i,j in formation_1 ]
         rect_list.append(floor)
         floor.x_position=350
         points=0
-        lives=4
+        lives=3
+        one_run=1
         radius_increase=0
         shrinking_radius=False
 
@@ -645,7 +644,7 @@ while running:
         game_state='game_won'   
 
     if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
-        rect_list=[rectangles(90,35,100*i+5,40*j+5,k) for i,j,k in seleceted_formation_list]
+        rect_list=[rectangles(90,35,100*i+5,40*j+5,k,random.choice(true_false_list)) for i,j,k in seleceted_formation_list]
         rect_list.append(floor)
 
 
@@ -697,8 +696,7 @@ while running:
         
 
     
-        letter_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in [('W', 0), ('e', 10), ('l', 20), ('c', 30), ('o', 40), ('m', 50), ('e', 60), ('t',72), ('o',78),('B', 90), ('r', 100), ('e', 110), ('a', 120), ('k', 130), ('o', 140), ('u', 150), ('t', 160),('W', 180), ('e', 190), ('l', 200), ('c', 210), ('o', 220), ('m', 230), ('e', 240),('t',252),('o',258),('B', 270), ('r', 280), ('e', 290), ('a', 300), ('k', 310), ('o', 320), ('u', 330), ('t', 340)]]
-        
+       
         timer_radius_1=pygame.time.get_ticks()
         for letters in letter_ring:
             letters.radius=100+radius_increase
@@ -965,19 +963,15 @@ while running:
             ballspeed_aktive=False
             ball_speed_reset=True
             ball_speed_timer_1=pygame.time.get_ticks()
-            dt=0.007
-            for ball in ball_list_class:
-                ball.x_speed*=1.1
-                ball.y_speed*=1.1
+            dt=0.008
+           
         
         ball_speed_timer_2 = pygame.time.get_ticks()
         if ball_speed_timer_2-ball_speed_timer_1>1000:
-            dt=0.005
             if ball_speed_reset:
                 ball_speed_reset=False
-                for ball in ball_list_class:
-                    ball.x_speed*=1/1.1
-                    ball.y_speed*=1/1.1
+                dt=0.005
+             
 
 
         #Leben
@@ -1096,9 +1090,7 @@ while running:
         menu_button.update()
         resume_button.update()
         
-        lose_rings = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Pause '*6)]
-        welcom_ring = [rotating_letter(letter_chose,angle,'white',100) for letter_chose,angle in rotating_letters('Breakout '*4)]
-
+      
         
         timer_ring_1 = pygame.time.get_ticks()
         if ring_moving_aktive: 
