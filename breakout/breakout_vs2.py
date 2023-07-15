@@ -6,7 +6,6 @@ from rgbcsv import color_tupels
 from math import sin, cos, pi
 import numpy as np
 
-
 class moving_bar:
     def __init__(self, x, y,width,heigth,length,y_offset,rect_chosen):
         self.x = x
