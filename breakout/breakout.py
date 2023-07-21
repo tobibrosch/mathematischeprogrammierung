@@ -89,8 +89,6 @@ class button():
         else:
             return False
 
-
-
 def rosette(n=7/8,radius=90):
     phi_list=np.linspace(0,50*pi*1000,num=5000)
     x = lambda zeta :  radius*cos(n*zeta)*cos(zeta)
@@ -154,9 +152,6 @@ class rainbow():
             pygame.draw.rect(screen,color_tupels[self.color_tupel_index],snake)
         if self.timer_1-self.timer_2>10:
             self.rainbow_moving=True
-    
-
-        
 
 class formation_rects():
     def __init__(self,x_tupel,y_tupel):
@@ -207,11 +202,6 @@ class rotating_letter():
         letter_rotated_rect = letter_rotated.get_rect(center=letter_rect.center)
 
         screen.blit(letter_rotated,letter_rotated_rect)
-
-
-    
-
-
 
 class rectangles():
     def __init__(self,x_size,y_size,x_position,y_position,hit_counter,extra_ball=False,extra_speed=False):
@@ -283,19 +273,26 @@ def removing_rects(rect=rectangles(0,0,0,0,0,0)):
             rect_list.remove(rect)
             rect_list.append(new_rect_to_append)
         points+=20
+#timervariablen damit der ball erst nach 3 Sekunden kommt
+waiter_aktive=False
+wait_3_seconds=0
 
 def moving_rect(dt):
-    global lives, points, rect_list, ball_list_class,timer_floor_1,change_color_floor, game_state
+    global lives, points, rect_list, ball_list_class,timer_floor_1,change_color_floor, game_state, waiter_aktive,wait_3_seconds
+    if pygame.time.get_ticks()-wait_3_seconds>1000 and waiter_aktive:
+                    waiter_aktive=False
+                    ball_list_class.append(balls(400,400,10,10,0,700,0,1,screen,random.choice(ball_colors)))
     for ball in ball_list_class:
         if ball.get_ball().top < 0:
             ball.y_position_ball=0
             ball.y_speed*= -1
         if ball.get_ball().bottom > 710:
             ball_list_class.remove(ball)
-            if ball_list_class==[]:
-                ball_list_class.append(balls(400,400,10,10,0,ball.y_speed,0,1,screen,random.choice(ball_colors)))
+            if ball_list_class==[] and not waiter_aktive:
+                wait_3_seconds=pygame.time.get_ticks()
+                waiter_aktive=True
                 lives-=1
-                floor.x_position=350
+                floor.x_position=400-floor.x_size/2
                 if lives<=0:
                      game_state='game_over'
         elif ball.get_ball().left < 0 or ball.get_ball().right > 800:
@@ -602,9 +599,10 @@ while running:
                 running =False
 
 
-    
+    #resetten der Variablen
     if reset_game:
         reset_game=False
+        waiter_aktive=False
         ball_1 =  balls(390,300,10,10,0,700,0,1,screen,random.choice(ball_colors))
         ball_list_class = [ball_1]
         rect_list = [rectangles(90,35,100*i+5,40*j+5,random.randint(1,3),random.choice(true_false_list),random.choice(true_false_list)) for i,j in formation_1 ]
@@ -616,11 +614,9 @@ while running:
         radius_increase=0
         shrinking_radius=False
 
-
+    
     if radius_increase<-500 and game_state=='menu':
         game_state='game'
-    
-    
 
     if name.strip()=='':
         name_left=True
@@ -643,7 +639,7 @@ while running:
         game_state='game_won'   
 
     if formation_safed and seleceted_formation_list!=[] and game_state=='menu+settings+formation':     
-        rect_list=[rectangles(90,35,100*i+5,40*j+5,k,random.choice(true_false_list)) for i,j,k in seleceted_formation_list]
+        rect_list=[rectangles(90,35,100*i+5,40*j+5,k,random.choice(true_false_list),random.choice(true_false_list)) for i,j,k in seleceted_formation_list]
         rect_list.append(floor)
 
 
