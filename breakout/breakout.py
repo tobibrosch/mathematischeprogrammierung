@@ -542,6 +542,7 @@ while running:
             if mouse_location().colliderect(menu_button.get_button()):
                 reset_game=True
                 game_state='menu'
+                ball_list_menu = [ball_3]
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu':
             if mouse_location().colliderect(pygame.Rect(10,750,40,40)):
                 game_state='menu+settings'
@@ -555,6 +556,7 @@ while running:
                 game_state='menu'
                 radius_increase=0
                 shrinking_radius=False
+                ball_list_menu = [ball_3]
 
 
         if event.type == pygame.MOUSEBUTTONDOWN and game_state=='menu+settings':
@@ -944,7 +946,7 @@ while running:
         timer_floor_2 = pygame.time.get_ticks()
 
         #game interaktion
-        moving_rect(dt)
+        moving_rect(dt) 
 
 
         if change_color_floor==True:
